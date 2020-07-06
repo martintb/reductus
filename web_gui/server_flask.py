@@ -51,6 +51,7 @@ def create_app(config=None):
             packed = msgpack_converter.packb(content, use_bin_type=True)
             response = make_response(packed)
             response.headers['Content-Type'] = 'application/msgpack'
+            response.headers['Access-Control-Allow-Origin'] = '*'
             return response
         return wrapper
 
