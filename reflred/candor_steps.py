@@ -12,11 +12,14 @@ from . import steps
 @module("candor")
 def candor(
         filelist=None,
+        bank_select=None,
+        channel_select=None,
         dc_rate=0.,
         dc_slope=0.,
         detector_correction=False,
         monitor_correction=False,
         spectral_correction=False,
+        Qz_basis='target',
         intent='auto',
         sample_width=None,
         base='auto'):
@@ -26,6 +29,10 @@ def candor(
     **Inputs**
 
     filelist (fileinfo[]): List of files to open.
+
+    bank_select {Select bank} (int) : Choose bank to output (default is all)
+
+    channel_select {Select channel(s)} (int[]*) : Choose channels to output from bank (default is all)
 
     dc_rate {Dark counts per minute} (float)
     : Number of dark counts to subtract from each detector channel per
@@ -45,6 +52,9 @@ def candor(
     spectral_correction {Apply detector efficiency correction} (bool)
     : If True, scale counts by the detector efficiency calibration given
     in the file (see Spectral Efficiency).
+
+    Qz_basis (opt:target|sample|detector|actual)
+    : How to calculate Qz from instrument angles.
 
     intent (opt:auto|specular|background+\|background-\|intensity|rock sample|rock detector|rock qx|scan)
     : Measurement intent (specular, background+, background-, slit, rock),
@@ -68,14 +78,21 @@ def candor(
     """
     from .load import url_load_list
     from .candor import load_entries
+    auto_divergence = True
 
     # Note: candor automatically computes divergence.
     datasets = []
     for data in url_load_list(filelist, loader=load_entries):
         # TODO: drop data rows where fastShutter.openState is 0
-        data.Qz_basis = 'target'
+        data.Qz_basis = Qz_basis
         if intent not in (None, 'none', 'auto'):
             data.intent = intent
+        if bank_select is not None:
+            data = select_bank(data, bank_select)
+        if channel_select is not None:
+            data = select_channel(data, channel_select)
+        if auto_divergence:
+            data = steps.divergence_fb(data, sample_width)
         if dc_rate != 0. or dc_slope != 0.:
             data = dark_current(data, dc_rate, dc_slope)
         if detector_correction:
@@ -88,6 +105,122 @@ def candor(
         datasets.append(data)
 
     return datasets
+
+@module("candor")
+def select_bank(data, bank_select=None):
+    r"""
+    Remove banks from Candor data.
+
+    **Inputs**
+
+    data (candordata): Input data with 1 or more banks
+
+    bank_select {Select bank} (int) : Choose banks to output (default is all)
+
+    **Returns**
+
+    output (candordata): Data with indices not listed in bank_select removed.
+
+    | 2020-07-07 Brian Maranville 
+    """
+
+    if bank_select is not None:
+        data = copy(data)
+        data.detector.counts = data.detector.counts[:,:,[bank_select]]
+        data.detector.counts_variance = data.detector.counts.copy()
+        data.detector.dims = data.detector.counts.shape
+
+        data.detector.efficiency = data.detector.efficiency[:,:,[bank_select]]
+        data.detector.angle_x_offset = data.detector.angle_x_offset[[bank_select]]
+        data.detector.wavelength = data.detector.wavelength[:,:,[bank_select]]
+        data.detector.wavelength_resolution = data.detector.wavelength_resolution[:,:,[bank_select]]
+    
+    return data
+
+@module("candor")
+def select_channel(data, channel_select=None):
+    r"""
+    Select channels from bank of Candor data.
+
+    **Inputs**
+
+    data (candordata): Input data with 1 or more banks
+
+    channel_select {Select channel(s)} (int[]*) : Choose channels to output (default is all)
+
+    **Returns**
+
+    output (candordata): Data with indices not listed in channel_select removed.
+
+    | 2020-07-12 Brian Maranville 
+    """
+
+    if channel_select is not None:
+        data = copy(data)
+        data.detector = copy(data.detector)										   
+        data.detector.counts = data.detector.counts[:,channel_select,:]
+        data.detector.counts_variance = data.detector.counts_variance[:,channel_select,:]
+        data.detector.dims = data.detector.counts.shape
+
+        data.detector.efficiency = data.detector.efficiency[:,channel_select,:]
+        data.detector.wavelength = data.detector.wavelength[:,channel_select,:]
+        data.detector.wavelength_resolution = data.detector.wavelength_resolution[:,channel_select,:]
+        if data._v is not None:
+            data._v = data._v[:,channel_select,:]
+        if data._dv is not None:
+            data._dv = data._dv[:,channel_select,:]
+    return data
+
+@module("candor")
+def select_points(data, point_select=None):
+    r"""
+    Select data points from scan of Candor.
+
+    **Inputs**
+
+    data (candordata): Input data with 1 or more banks
+
+    point_select {Select points(s)} (int[]*) : Choose points to output (default is all)
+
+    **Returns**
+
+    output (candordata): Data with point indices not listed in point_select removed.
+
+    | 2020-07-03 Brian Maranville 
+    """
+
+    if point_select is not None:
+        data = copy(data)
+        data.detector.counts = data.detector.counts[point_select]
+        data.detector.counts_variance = data.detector.counts_variance[point_select]
+        data.detector.dims = data.detector.counts.shape
+        monitor = data.monitor
+        monitor.counts = monitor.counts[point_select]
+        monitor.counts_variance = monitor.counts_variance[point_select]
+        monitor.count_time = monitor.count_time[point_select]
+        monitor.roi_counts = monitor.roi_counts[point_select]
+        monitor.roi_variance = monitor.roi_variance[point_select]
+        monitor.source_power = monitor.source_power[point_select]
+        monitor.source_power_variance = monitor.source_power_variance[point_select]
+
+        if data._v is not None:
+            data.v = data.v[point_select]
+        if data._dv is not None:
+            data.dv = data.dv[point_select]
+        if data.angular_resolution is not None:
+            data.angular_resolution = data.angular_resolution[point_select]
+
+        for slit in (data.slit1, data.slit2, data.slit3, data.slit4):
+            slit.x = slit.x[point_select]
+            slit.x_target = slit.x_target[point_select]
+
+        data.sample.angle_x = data.sample.angle_x[point_select]
+        data.sample.angle_x_target = data.sample.angle_x_target[point_select]
+        data.detector.angle_x = data.detector.angle_x[point_select]
+        data.detector.angle_x_target = data.detector.angle_x_target[point_select]
+    
+    return data
+
 
 @module("candor")
 def spectral_efficiency(data, spectrum=()):
@@ -103,7 +236,7 @@ def spectral_efficiency(data, spectrum=()):
 
     data (candordata) : data to scale
 
-    spectrum (float[]) : override spectrum from data file
+    spectrum (float[]?) : override spectrum from data file
 
     **Returns**
 
@@ -111,21 +244,59 @@ def spectral_efficiency(data, spectrum=()):
 
     | 2020-03-03 Paul Kienzle
     """
-    from .candor import NUM_CHANNELS
+    #from .candor import NUM_CHANNELS
     # TODO: too many components operating directly on detector counts?
     # TODO: let the user paste their own spectral efficiency, overriding datafile
     # TODO: generalize to detector shapes beyond candor
     #print(data.v.shape, data.detector.efficiency.shape)
-    if len(spectrum)%NUM_CHANNELS != 0:
-        raise ValueError("Vector length {s_len} must be a multiple of {NUM_CHANNELS}".format(s_len=len(spectrum), NUM_CHANNELS=NUM_CHANNELS))
+    #if len(spectrum)%NUM_CHANNELS != 0:
+    #    raise ValueError("Vector length {s_len} must be a multiple of {NUM_CHANNELS}".format(s_len=len(spectrum), NUM_CHANNELS=NUM_CHANNELS))
     if spectrum:
-        spectrum = np.reshape(spectrum, (NUM_CHANNELS, -1)).T[None, :, :]
+        #spectrum = np.reshape(spectrum, (NUM_CHANNELS, -1)).T[None, :, :]
+        spectrum = np.reshape(spectrum, data.detector.efficiency.shape)
     else:
         spectrum = data.detector.efficiency
     data = copy(data)
     data.detector = copy(data.detector)
     data.detector.counts = data.detector.counts / spectrum
     data.detector.counts_variance = data.detector.counts_variance / spectrum
+    return data
+
+
+@module("candor")
+def recalibrate_wavelength(data, wavelengths=(), wavelength_resolutions=()):
+    r"""
+    Use different wavelength calibration from that already in the data file.
+
+    **Inputs**
+
+    data (candordata) : data to scale
+
+    wavelengths (float[]?) : override wavelengths from data file
+    
+    wavelength_resolutions (float[]?) : override wavelength spreads (sigma) from data file
+
+    **Returns**
+
+    output (candordata) : scaled data
+
+    | 2020-08-14 David Hoogerheide
+    """
+    # TODO: too many components operating directly on detector counts?
+    # TODO: let the user paste their own spectral efficiency, overriding datafile
+    # TODO: generalize to detector shapes beyond candor
+    if wavelengths:
+        wavelengths = np.reshape(wavelengths, data.detector.wavelength.shape)
+    else:
+        wavelengths = data.detector.wavelength
+    if wavelength_resolutions:
+        wavelength_resolutions = np.reshape(wavelength_resolutions, data.detector.wavelength_resolution.shape)
+    else:
+        wavelength_resolutions = data.detector.wavelength_resolution
+    data = copy(data)
+    data.detector = copy(data.detector)
+    data.detector.wavelength = wavelengths
+    data.detector.wavelength_resolution = wavelength_resolutions
     return data
 
 @module("candor")
@@ -260,7 +431,7 @@ def stitch_intensity(data, tol=0.001):
 
 
 @module("candor")
-def candor_rebin(data, qmin=None, qmax=None, qstep=0.003):
+def candor_rebin(data, qmin=None, qmax=None, qstep=0.003, qstep_max=None):
     r"""
     Join the intensity measurements into a single entry.
 
@@ -272,25 +443,33 @@ def candor_rebin(data, qmin=None, qmax=None, qstep=0.003):
 
     qmax (float) : End of q range, or empty to infer from data
 
-    qstep (float) : q step size
+    qstep (float) : q step size at qmin, or 0 for no rebinning
+
+    qstep_max (float) : maximum q step size at qmax, or empty to use qstep over entire q range
 
     **Returns**
 
     output (refldata) : joined data
 
     | 2020-03-04 Paul Kienzle
+    | 2020-08-03 David Hoogerheide adding progressive q step coarsening
     """
-    from .candor import rebin
+    from .candor import rebin, nobin
 
-    if qmin is None:
-        qmin = data.Qz.min()
+    if qstep == 0.0:
+        data = nobin(data)
+    else:
+        if qmin is None:
+            qmin = data.Qz.min()
+        if qmax is None:
+            qmax = data.Qz.max()
+        if qstep_max is None:
+            q = np.arange(qmin, qmax, qstep)
+        else:
+            dq = np.linspace(qstep,qstep_max, int(np.ceil(2*(qmax-qmin)/(qstep_max+qstep))))
+            q = (qmin-qstep) + np.cumsum(dq) 
+        data = rebin(data, q)
 
-    if qmax is None:
-        qmax = data.Qz.max()
-
-    q = np.arange(qmin, qmax, qstep)
-
-    data = rebin(data, q)
     return data
 
 candor_join = copy_module(
@@ -311,4 +490,12 @@ candor_background = copy_module(
 
 candor_divide = copy_module(
     steps.divide_intensity, "candor_divide",
+    "refldata", "candordata", tag="candor")
+
+candor_divergence_fb = copy_module(
+    steps.divergence_fb, "candor_divergence",
+    "refldata", "candordata", tag="candor")
+
+candor_sample_broadening = copy_module(
+    steps.sample_broadening, "candor_sample_broadening",
     "refldata", "candordata", tag="candor")

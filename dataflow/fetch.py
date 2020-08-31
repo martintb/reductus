@@ -16,7 +16,7 @@ For example::
         },
         {
             "name": "ncnr",
-            "url": "http://ncnr.nist.gov/pub/",
+            "url": "https://ncnr.nist.gov/pub/",
             "start_path": "ncnrdata",
         },
         {
@@ -94,18 +94,22 @@ def url_get(fileinfo, mtime_check=True):
     else:
         source = fileinfo.get("source", DEFAULT_DATA_SOURCE)
         name = basename(path)
-        if source == 'local':
-            path = urllib.request.pathname2url(os.path.abspath(path))
+        isLocal = (source == 'local')
+        #    path = urllib.request.pathname2url(os.path.abspath(path))
         source_url = check_datasource(source)
         full_url = join(source_url, urllib.parse.quote(path.strip(sep), safe='/:'))
-        url = None
         print("loading", full_url, name)
+        req = None  # Need placeholder for req in case SESSION.get fails.
         try:
-            req = SESSION.get(full_url)
-            if mtime_check:
+            if isLocal:
+                t_repo = datetime.datetime.fromtimestamp(int(os.stat(path).st_mtime), pytz.utc)
+            else:
+                req = SESSION.get(full_url)
                 url_mtime = req.headers['last-modified']
                 url_time_struct = time.strptime(url_mtime, '%a, %d %b %Y %H:%M:%S %Z')
                 t_repo = datetime.datetime(*url_time_struct[:6], tzinfo=pytz.utc)
+
+            if mtime_check:
                 t_request = datetime.datetime.fromtimestamp(mtime, pytz.utc)
                 if mtime is None:
                     raise ValueError("timestamp checking enabled but no timestamp provided")
@@ -115,32 +119,22 @@ def url_get(fileinfo, mtime_check=True):
                 elif t_request < t_repo:
                     print("request mtime = %s, repo mtime = %s"%(t_request, t_repo))
                     raise ValueError("Requested mtime is older than repository mtime for %r"%path)
+            
+            if isLocal:
+                with open(path, 'rb') as localfile:
+                    ret = localfile.read()
+                # no caching for local files.
+            else:
+                ret = req.content
+                print("caching " + path)
+                cache.store_file(fp, ret)
 
-            ret = req.content
-            print("caching " + path)
-            cache.store_file(fp, ret)
         except requests.HTTPError as exc:
             raise ValueError("Could not open %r\n%s"%(path, str(exc)))
+        except FileNotFoundError as exc:
+            raise ValueError("Could not find %r\n%s"%(path, str(exc)))
         finally:
             if req is not None:
                 req.close()
 
     return ret
-
-def find_mtime(path):
-    check_datasource()
-    try:
-        req = SESSION.head(DEFAULT_DATA_SOURCE+path)
-        mtime_str = req.headers['last-modified']
-        mtime = datetime.datetime.strptime(mtime_str, r'%a, %d %b %Y %H:%M:%S %Z')
-    except requests.HTTPError as exc:
-        raise ValueError("Could not open %r\n%s"%(path, str(exc)))
-    timestamp = int(mtime.timestamp())
-
-    return {'path': path, 'mtime': timestamp}
-
-def url_get_list(files=None):
-    if files is None:
-        return []
-    result = [entry for fileinfo in files for entry in url_get(fileinfo)]
-    return result

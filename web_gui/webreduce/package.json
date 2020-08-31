@@ -1,0 +1,56 @@
+{
+  "name": "reductus",
+  "version": "1.0.0",
+  "description": "Web-based data reduction for neutron reflectometry with python backend",
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "parcel build js/main.js js/template_editor_main.js --public-url=\"./\"; cp -r icons/ dist/",
+    "build_index_sed": "parcel build index.html --public-url=\"./\"; sed -i 's/type=\"module\" //g' dist/index.html; cp -r icons/ dist/;",
+    "build_index": "parcel build index.html template_editor_live.html --public-url='./'; cp -r icons/ dist/;",
+    "build_main": "parcel build index.js --public-url=\"./\"; cp -r index.html icons/ dist/;"
+  },
+  "alias": {
+    "*js/libraries.js": "./js/libraries_production.js",
+    "*css/index.css": "./css/index_prod.css",
+    "vue": "./node_modules/vue/dist/vue.common.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reductus/reductus.git"
+  },
+  "keywords": [
+    "data",
+    "reduction"
+  ],
+  "author": "Brian B. Maranville",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "bugs": {
+    "url": "https://github.com/reductus/reductus/issues"
+  },
+  "homepage": "https://github.com/reductus/reductus#readme",
+  "type": "module",
+  "devDependencies": {
+    "cssnano": "^4.1.10",
+    "parcel": "^2.0.0-beta.1",
+    "sass": "^1.26.10"
+  },
+  "dependencies": {
+    "@widgetjs/tree": "github:bmaranville/treejs#master",
+    "d3": "^5.16.0",
+    "d3-science": "github:usnistgov/d3-science#v0.2.6",
+    "material-design-icons": "^3.0.1",
+    "messagepack": "^1.1.11",
+    "pouchdb-browser": "^7.2.2",
+    "roboto-fontface": "^0.10.0",
+    "sha1": "^1.1.1",
+    "split.js": "^1.5.11",
+    "vue": "^2.6.11",
+    "vue-material": "^1.0.0-beta-15",
+    "vuedraggable": "^2.24.0",
+    "zip.js": "github:bmaranville/zip.js#0.0.3"
+  }
+}

@@ -339,6 +339,27 @@ def _loadDivData(entry):
     
     return div_entries
 
+@module
+def SortDataAutomatic(data):
+    """
+    Sorting with algorithms to categorize all files and auto-associate
+
+    **Inputs**
+
+    data (raw[]): data files to sort, typically all of them
+
+    **Returns**
+
+    sorting_info (params): associations and metadata, by filenumber
+
+    2020-05-06 Brian Maranville
+    """
+
+    from .categorize import SortDataAutomatic
+    from .vsansdata import Parameters
+
+    return Parameters(SortDataAutomatic(data))
+
 @cache
 @module
 def He3_transmission(he3data, trans_panel="auto"):
@@ -359,7 +380,9 @@ def He3_transmission(he3data, trans_panel="auto"):
 
     mappings (params[]): cell parameters
 
-    2018-05-01 Brian Maranville
+    | 2018-05-01 Brian Maranville
+    | 2020-07-30 Brian Maranville update cell name
+
     """
     from .vsansdata import short_detectors, Parameters, VSans1dData,  _toDictItem
     import dateutil.parser
@@ -407,7 +430,7 @@ def He3_transmission(he3data, trans_panel="auto"):
         wavelength = d.metadata.get("resolution.lmda")
         mappings.setdefault(tstartstr, {
             "Insert_time": tstart,
-            "Cell_name": d.metadata.get("he3_back.name", "unknown"),
+            "Cell_name": _s(d.metadata.get("he3_back.name", "unknown")),
             "Te": d.metadata.get("he3_back.te", 1.0),
             "Mu": opacity*wavelength,
             "Transmissions": []
@@ -475,7 +498,7 @@ def He3_transmission(he3data, trans_panel="auto"):
         v = np.array(transmissions)
         dv = np.zeros_like(v)
         ordering = np.argsort(x)
-        trans_1d.append(VSans1dData(x[ordering], v[ordering], dx=dx, dv=dv, xlabel="timestamp", vlabel="Transmission", metadata={"title": m["Cell_name"]}))
+        trans_1d.append(VSans1dData(x[ordering], v[ordering], dx=dx, dv=dv, xlabel="timestamp", vlabel="Transmission", metadata={"title": _s(m["Cell_name"])}))
 
     return he3data, trans_1d, [Parameters({"cells": mappings, "blocked_beams": bb_out})]
 
