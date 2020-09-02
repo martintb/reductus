@@ -66,7 +66,7 @@ def module(action):
 # Loader stuff
 #################
 
-@cache
+@nocache
 @module
 def LoadDIV(filelist=None, variance=0.0001):
     """
@@ -109,7 +109,7 @@ def LoadDIV(filelist=None, variance=0.0001):
             output.append(sens)
     return output
 
-@cache
+@nocache
 @module
 def LoadRawSANS(filelist=None, check_timestamps=True):
     """
@@ -159,7 +159,7 @@ def LoadRawSANS(filelist=None, check_timestamps=True):
 
     return data
 
-@cache
+@nocache
 @module
 def patch(data, patches=None):
     """
@@ -191,7 +191,7 @@ def patch(data, patches=None):
 
     return data
 
-@cache
+@nocache
 @module
 def autosort(rawdata, subsort="det.des_dis", add_scattering=True):
     """
@@ -262,7 +262,7 @@ def autosort(rawdata, subsort="det.des_dis", add_scattering=True):
     return sample_scatt, blocked_beam, empty_scatt, sample_trans, empty_trans
 
 
-@cache
+@nocache
 @module
 def LoadSANS(filelist=None, flip=False, transpose=False, check_timestamps=True):
     """
@@ -385,7 +385,7 @@ def draw_ellipse(data, ellipse=[0,0,0.01,0.01]):
 
     return data
 
-#@cache
+#@nocache
 #@module
 def calculateDQ(data):
     """
@@ -647,7 +647,7 @@ def _calculate_Q(X, Y, Z, q0):
 def FX(xx,sx3,xcenter,sx):
     return sx3*np.tan((xx-xcenter)*sx/sx3)
 
-@cache
+@nocache
 @module
 def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
     """
@@ -746,7 +746,7 @@ def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
     calculateMeanQ(res)
     return res
 
-@cache
+@nocache
 @module
 def circular_av(data):
     """
@@ -845,7 +845,7 @@ def circular_av(data):
 def oversample_2d(input_array, oversampling):
     return np.repeat(np.repeat(input_array, oversampling, 0), oversampling, 1)
 
-@nocache
+@nocache #nocache
 @module
 def circular_av_new(data, q_min=None, q_max=None, q_step=None, mask_width=3, dQ_method='none'):
     """
@@ -974,7 +974,7 @@ def circular_av_new(data, q_min=None, q_max=None, q_step=None, mask_width=3, dQ_
     
     return nominal_output, mean_output, canonical_output
 
-@cache
+@nocache
 @module
 def sector_cut(data, sector=[0.0, 90.0], mirror=True):
     """
@@ -1418,7 +1418,7 @@ def correct_solid_angle(sansdata):
     sansdata.data.x = sansdata.data.x*(np.cos(sansdata.theta)**3)
     return sansdata
 
-@cache
+@nocache
 @module
 def correct_detector_sensitivity(sansdata, sensitivity):
     """"
@@ -1465,7 +1465,7 @@ def lookup_attenuation(instrument_name, attenNo, wavelength):
     att_err_interp = np.interp(w, wavelength_key, att_err)
     return {"att": att_interp[0], "att_err": att_err_interp[0]} # err here is percent error
 
-@cache
+@nocache
 @module
 def correct_attenuation(sample, instrument="NG7"):
     """
@@ -1493,7 +1493,7 @@ def correct_attenuation(sample, instrument="NG7"):
     atten_corrected.data /= denominator
     return atten_corrected
 
-@cache
+@nocache
 @module
 def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box=[55, 74, 53, 72], auto_box=True, margin=5):
     """
@@ -1604,7 +1604,7 @@ def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box
     #------------------------------------
     return ABS, Parameters(params)
 
-@cache
+@nocache
 @module
 def patchData(data1, data2, xmin=55, xmax=74, ymin=53, ymax=72):
     """
@@ -1636,7 +1636,7 @@ def patchData(data1, data2, xmin=55, xmax=74, ymin=53, ymax=72):
     output.data[patch_slice] = data2.data[patch_slice]
     return output
 
-@cache
+@nocache
 @module
 def addSimple(data):
     """
@@ -1709,7 +1709,7 @@ def groupAddData(data, group_by="run.configuration,sample.description"):
     output = [addSimple(g) for g in groups.values()]
     return output
 
-@cache
+@nocache
 @module
 def makeDIV(data1, data2, patchbox=(55, 74, 53, 72)):
     """
@@ -1865,7 +1865,7 @@ def sliceData(data, slicebox=[None,None,None,None]):
                         
     return x_output, y_output
 
-@nocache
+@nocache #nocache
 @module
 def transmissionDecay(data, slicebox=[None,None,None,None], autosort=True):
     """
@@ -1944,7 +1944,7 @@ def sumBox(data, xmin, xmax, ymin, ymax):
     box_sum = uncertainty.sum(data.data[dataslice])
     return box_sum
     
-@cache
+@nocache
 @module
 def SuperLoadSANS(filelist=None, do_det_eff=True, do_deadtime=True,
                   deadtime=1.0e-6, do_mon_norm=True, do_atten_correct=True, mon0=1e8,
