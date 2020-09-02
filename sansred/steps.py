@@ -1243,6 +1243,16 @@ def generate_transmission(in_beam, empty_beam, integration_box=[55, 74, 53, 72],
     | 2019-08-14 Adding metadata for grouping later, Brian Maranville
     | 2019-08-22 Adding align_by for inputs, Brian Maranville
     """
+    if (len(in_beam)==0) or (len(empty_beam)==0):
+        return [
+            Parameters(
+                OrderedDict([ 
+                    ("factor", 1.0), 
+                    ("factor_variance", 0.0),
+                    ("factor_err", 0.0)
+                ])
+            )
+        ]
     
     if align_by == "none":
         if len(in_beam) != len(empty_beam):
