@@ -75,6 +75,7 @@ def candor(
 
     | 2020-02-05 Paul Kienzle
     | 2020-03-12 Paul Kienzle Add slit 1 dependence for DC rate
+    | 2020-08-27 Brian Maranville loader gets attenuator information
     """
     from .load import url_load_list
     from .candor import load_entries
@@ -340,6 +341,79 @@ def dark_current(data, dc_rate=0., s1_slope=0.):
     return data
 
 @module("candor")
+def attenuation(data, transmission=None, transmission_err=None, target_value=None):  
+    r"""
+    Correct for wavelength-dependent attenuation from built-in attenuators
+
+    Attenuation is specified per attenuator and detector,
+    Attenuation_err should have the same shape, and is the width of the uncertainty for
+    each transmission (1-sigma)
+
+    If user-defined values are supplied, they will overwite the values in the data
+    If no user-defined values are given, the values from the datafile will be used.
+
+    **Inputs**
+
+    data (candordata) : data to correct
+
+    transmission (float[]?) : transmission vs. detector number (num_atten x num_detectors)
+
+    transmission_err (float[]?) : 1-sigma width of uncertainty distribution of transmission
+
+    target_value {Attenuator setting} (float[]?) : Attenuator setting, per point.  (npts)
+        E.g. 1 if attenuator.key = 1 in NICE
+
+    **Returns**
+
+    corrected (candordata) : corrected data
+
+    | 2020-08-24 Brian Maranville
+    """
+
+    from .candor import NUM_CHANNELS
+    if transmission is not None:
+        data.attenuator.transmission = np.reshape(np.array(transmission), (-1, NUM_CHANNELS))
+    if transmission_err is not None:
+        data.attenuator.transmission_err = np.reshape(np.array(transmission_err), (-1, NUM_CHANNELS))
+    if target_value is not None:
+        data.attenuator.target_value = np.array(target_value)
+    
+    num_attenuators = data.attenuator.transmission.shape[0]
+
+    for ai in range(1, num_attenuators+1):
+        av = data.attenuator.target_value
+        matching = (av == ai)
+        if not np.any(matching):
+            continue
+        
+        trans = data.attenuator.transmission[ai-1][None, :, None]
+        trans_err = data.attenuator.transmission_err
+        att = 1.0 / (trans)
+        if trans_err is None or len(trans_err) < (ai-1):
+            datt = np.zeros_like(att)
+        else:
+            datt = (trans_err[ai-1][None,:,None]) * att**2
+        
+        if data._v is not None:
+            v = data._v[matching]
+            if data._dv is not None:
+                dv = data._dv[matching]
+            else:
+                dv = np.zeros_like(v)
+            new_dv = np.sqrt(dv**2 * att**2 + datt**2 * v**2)
+            data._dv[matching] = new_dv
+            data._v[matching] *= att
+
+        else:
+            v = data.detector.counts[matching]
+            var_v = data.detector.counts_variance[matching]
+            new_var = var_v * att**2 + datt**2 * v**2
+            data.detector.counts_variance[matching] = new_var
+            data.detector.counts[matching] *= att
+
+    return data
+
+@module("candor")
 def stitch_intensity(data, tol=0.001):
     r"""
     Join the intensity measurements into a single entry.
@@ -377,6 +451,8 @@ def stitch_intensity(data, tol=0.001):
         # the smallest attenuators are needed, and (2) the attenuation
         # computed at the next cycle automatically includes the cumulative
         # attenuation up to the current cycle.
+        # Note: attenuators are wavelength-dependent, so keep separate
+        # attenuation for each detector in each the bank.
         # TODO: propagate uncertainties
         # TODO: maybe update counts (unnormalized) rather than v (normalized)
         atten = a.v[-1] / b.v[0]
@@ -431,9 +507,19 @@ def stitch_intensity(data, tol=0.001):
 
 
 @module("candor")
-def candor_rebin(data, qmin=None, qmax=None, qstep=0.003, qstep_max=None):
+def candor_rebin(data, qmin=None, qmax=None, qstep=0.003, qstep_max=None, average='poisson'):
     r"""
     Join the intensity measurements into a single entry.
+
+    Early in the processing, when only normalized by monitor and time, points
+    may be combined using Poisson statistics, where the uncertainty of the
+    averaged rates will match the uncertainty in the rate if the measurement
+    were performed in one step. As additional corrections are applied, such
+    as deadtime corrections or other scaling this becomes less correct. After
+    normalization by incident beam and more particularly, background
+    subtraction, Poisson statistics are no longer reasonable and Gaussian
+    statistics should be used to average the combined rates rather than
+    recomputing the rates from the inferred counts.
 
     **Inputs**
 
@@ -446,6 +532,8 @@ def candor_rebin(data, qmin=None, qmax=None, qstep=0.003, qstep_max=None):
     qstep (float) : q step size at qmin, or 0 for no rebinning
 
     qstep_max (float) : maximum q step size at qmax, or empty to use qstep over entire q range
+
+    average (opt:poisson|gauss) : combine bins using poisson or gaussian distribution
 
     **Returns**
 
@@ -467,8 +555,8 @@ def candor_rebin(data, qmin=None, qmax=None, qstep=0.003, qstep_max=None):
             q = np.arange(qmin, qmax, qstep)
         else:
             dq = np.linspace(qstep,qstep_max, int(np.ceil(2*(qmax-qmin)/(qstep_max+qstep))))
-            q = (qmin-qstep) + np.cumsum(dq) 
-        data = rebin(data, q)
+            q = (qmin-qstep) + np.cumsum(dq)
+        data = rebin(data, q, average)
 
     return data
 

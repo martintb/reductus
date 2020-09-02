@@ -15,6 +15,5 @@ werkzeug
 typing
 simplejson
 pytest
-importlib_resources
 lz4
 requests
