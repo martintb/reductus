@@ -47,8 +47,7 @@ instrument.load_file = load_sans;
 instrument.default_categories = [
   [["analysis.filepurpose"]],
   [["sample.description"]],
-  [["analysis.intent"]],
-  [["run.experimentScanID"]]
+  [["run.configuration"]]
 ];
 instrument.categories = extend(true, [], instrument.default_categories);
 instrument.decorators = [add_viewer_link, add_counts];
