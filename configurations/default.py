@@ -52,5 +52,5 @@ config = {
     ],
     
     # if not set, will instantiate all instruments.
-    "instruments": ["refl", "ospec", "sans"]
+    "instruments": ["sans","refl", "ospec"]
 }
