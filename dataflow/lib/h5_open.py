@@ -36,5 +36,5 @@ def h5_open_zip(filename, file_obj=None, **kw):
             file_obj = io.BytesIO(zf.read(members[0]))
             filename = members[0]
 
-        f = h5py.File(file_obj, **kw)
+        f = h5py.File(file_obj,mode='r', **kw)
     return f
