@@ -14,3 +14,7 @@ __pycache__
 /web_gui/config.py
 /web_gui/git_version*
 /dataflow/git_version*
+/web_gui/cache/*
+/web_gui/files_cache/*
+reductus.egg-info/*
+*ipynb_checkpoints*
