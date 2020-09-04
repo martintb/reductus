@@ -717,7 +717,6 @@ def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
     r_low, theta_low, q_low, phi_low, qx_low, qy_low, qz_low = _calculate_Q(X_low, Y_low, Z, q0)
     r_high, theta_high, q_high, phi_high, qx_high, qy_high, qz_high = _calculate_Q(X_high, Y_high, Z, q0)
 
-    res = data.copy()
     #Adding res.q
     res.q = q
     res.qx = qx
