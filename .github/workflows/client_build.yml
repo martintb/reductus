@@ -5,10 +5,10 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ es6_modules ]
+    branches: [ plotters_filebrowser ]
   workflow_dispatch:
   pull_request:
-    branches: [ es6_modules ]
+    branches: [ plotters_filebrowser ]
 
 defaults:
   run:
@@ -33,8 +33,8 @@ jobs:
     - run: npm ci
     - run: |
         rm -rf dist
-        npm run build --if-present
-        zip -r dist dist/
+        npm run build_index --if-present
+        cd dist && zip -r ../dist.zip .
     - name: Archive production artifacts
       uses: actions/upload-artifact@v1
       with:
