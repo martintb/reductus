@@ -1956,8 +1956,15 @@ def sumBox(data, xmin, xmax, ymin, ymax):
     
 @nocache
 @module
-def SuperLoadSANS(filelist=None, do_det_eff=True, do_deadtime=True,
-                  deadtime=1.0e-6, do_mon_norm=True, do_atten_correct=True, mon0=1e8,
+def SuperLoadSANS(filelist=None, 
+                  do_pixels_to_q=False, 
+                  do_solid_angle_correct=True, 
+                  do_det_eff=True, 
+                  do_deadtime=True,
+                  deadtime=1.0e-6, 
+                  do_mon_norm=True, 
+                  do_atten_correct=True, 
+                  mon0=1e8,
                   check_timestamps=True):
     """
     loads a data file into a SansData obj, and performs common reduction steps
@@ -1990,7 +1997,26 @@ def SuperLoadSANS(filelist=None, do_det_eff=True, do_deadtime=True,
     | 2019-12-11 Changed loader to include sample aperture offset position
     """
     data = LoadSANS(filelist, flip=False, transpose=False, check_timestamps=check_timestamps)
+    
+    data = ApplyCorrections(filelist, do_pixels_to_q, do_solid_angle_correct, do_det_eff, do_deadtime,
+                  deadtime, do_mon_norm, do_atten_correct, mon0, check_timestamps)
+    return data 
 
+@nocache
+@module
+def ApplyCorrections(filelist=None, 
+                    do_pixels_to_q=False, 
+                    do_solid_angle_correct=True, 
+                    do_det_eff=True, 
+                    do_deadtime=True,
+                    deadtime=1.0e-6, 
+                    do_mon_norm=True, 
+                    do_atten_correct=True, 
+                    mon0=1e8,
+                    check_timestamps=True):
+    
+    if do_solid_angle_correct or do_pixels_t_q:
+        data = [PixelsToQ(d,correct_solid_angle=do_solid_angle_correct) for d in data]
     if do_det_eff:
         data = [correct_detector_efficiency(d) for d in data]
     if do_deadtime:
