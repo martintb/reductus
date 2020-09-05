@@ -1463,6 +1463,7 @@ def correct_detector_sensitivity(sansdata, sensitivity):
     """
     res = sansdata.copy()
     res.data /= sensitivity.data
+    res.sensitivity_corrected = True
 
     return res
 

@@ -46,7 +46,9 @@ class SansData(object):
     """
     def __init__(self, data=None, metadata=None, q=None, qx=None, qy=None, aspect_ratio=1.0,
                  xlabel="X", ylabel="Y",
-                 theta=None, Tsam=None, Temp=None, attenuation_corrected=False):
+                 theta=None, Tsam=None, Temp=None, 
+                 attenuation_corrected=False,
+                 sensitivity_corrected=False):
         if isinstance(data, np.ndarray):
             # Data is counts, so variance is counts.  Set variance on zero counts to 1
             self.data = Uncertainty(data, data + (data==0))
@@ -67,6 +69,7 @@ class SansData(object):
         self.aspect_ratio = aspect_ratio
         self.theta = theta
         self.attenuation_corrected = attenuation_corrected
+        self.sensitivity_corrected = sensitivity_corrected
 
         self.Tsam = None #Tsam and Temp are used to store the transmissions for later use
         self.Temp = None
@@ -117,7 +120,9 @@ class SansData(object):
                         q=copy(self.q), qx=copy(self.qx), qy=copy(self.qy),
                         theta=copy(self.theta), aspect_ratio=self.aspect_ratio,
                         xlabel=self.xlabel, ylabel=self.ylabel,
-                        attenuation_corrected=self.attenuation_corrected)
+                        attenuation_corrected=self.attenuation_corrected,
+                        sensitivity_corrected=self.sensitivity_corrected,
+                       )
 
     def __copy__(self):
         return self.copy()
