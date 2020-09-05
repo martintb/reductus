@@ -1424,9 +1424,21 @@ def correct_solid_angle(sansdata):
 
     2016-08-03 Brian Maranville
     """
-
-    sansdata.data.x = sansdata.data.x*(np.cos(sansdata.theta)**3)
-    return sansdata
+    if sansdata.theta is None:
+        raise ValueError("Theta is not defined - convert pixels to Q first (use PixelsToQ module)")
+        
+    res = sansdata.copy()
+    
+    x, y = np.indices(res.data.x.shape) + 1.0 # center of first pixel is 1, 1 (Detector indexing)
+    xcenter, ycenter = [(dd + 1.0)/2.0 for dd in res.data.x.shape] # = 64.5 for 128x128 array
+    sx = data.metadata['det.pixelsizex'] # cm
+    sy = data.metadata['det.pixelsizey']
+    sx3 = 1000.0 # constant, = 10000(mm) = 1000 cm; not in the nexus file for some reason.
+    sy3 = 1000.0 # (cm) also not in the nexus file 
+    xx = np.square(np.cos((x-xcenter)*sx/sx3))
+    yy = np.square(np.cos((y-ycenter)*sy/sy3))
+    res.data.x = res.data.x * xx * yy / (np.cos(2*res.theta)**3)
+    return res
 
 @nocache
 @module
