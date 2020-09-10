@@ -881,15 +881,15 @@ editor.load_template = async function(template_def, selected_module, selected_te
       
   let template_sourcepaths = filebrowser.getAllTemplateSourcePaths(template_def);
   let browser_sourcepaths = filebrowser.getAllBrowserSourcePaths();
-    var sources_loaded = Promise.resolve();
-  Object.entries(template_sourcepaths).forEach(async ([source, pathobj]) => {
+  var sources_loaded = Promise.resolve();
+  for (let [source, pathobj] of Object.entries(template_sourcepaths)) {
     let paths = Object.keys(pathobj);
-    paths.forEach(async (path) => {
+    for (let path of paths) {
       if (browser_sourcepaths.findIndex(sp => (sp.source == source && sp.path == path)) < 0) {
         await filebrowser.addDataSource(source, path.split("/"));
       }
-    })
-  })
+    }
+  }
     
   var target = d3.select("#" + we._target_id);    
   we._instance.import(template_def);
