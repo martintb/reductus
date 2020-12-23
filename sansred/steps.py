@@ -281,7 +281,6 @@ def LoadSANS(filelist=None, flip=False, transpose=False, check_timestamps=True):
 
     **Returns**
 
-    output (raw[]): all the entries loaded.
     output (sans2d[]): all the entries loaded.
 
     | 2019-07-26 Brian Maranville
@@ -712,12 +711,9 @@ def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
     # bin corners:
     X_low = sx3*np.tan((x - 0.5 - xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
     X_high = sx3*np.tan((x + 0.5 - xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
-    Y_low = sy3*np.tan((y - 0.5 - ycenter)*sy/sy3) - dybm
     Y_low  = sy3*np.tan((y - 0.5 - ycenter)*sy/sy3) - dybm
     Y_high = sy3*np.tan((y + 0.5 - ycenter)*sy/sy3) - dybm
 
-    r_low, theta_low, q_low, phi_low, qx_low, qy_low, qz_low = _calculate_Q(X_low, Y_low, Z, q0)
-    r_high, theta_high, q_high, phi_high, qx_high, qy_high, qz_high = _calculate_Q(X_high, Y_high, Z, q0)
     r_lo, theta_lo, q_lo, phi_lo, qx_lo, qy_lo, qz_lo = _calculate_Q(X_low, Y_low, Z, q0)
     r_hi, theta_hi, q_hi, phi_hi, qx_hi, qy_hi, qz_hi = _calculate_Q(X_high, Y_high, Z, q0)
 
@@ -727,10 +723,6 @@ def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
     res.qy = qy
     res.qz = qz
     # bin edges:
-    res.qx_low = qx_low
-    res.qy_low = qy_low
-    res.qx_high = qx_high
-    res.qy_high = qy_high
     res.qx_lo = qx_lo
     res.qy_lo = qy_lo
     res.qx_hi = qx_hi
@@ -918,13 +910,9 @@ def circular_av_new(data, q_min=None, q_max=None, q_step=None, mask_width=3, dQ_
     o_qxi, o_qyi = np.indices(o_mask.shape)
     o_qx_offsets = ((o_qxi % oversampling) + 0.5) / oversampling
     o_qy_offsets = ((o_qyi % oversampling) + 0.5) / oversampling
-    qx_width = oversample_2d(data.qx_high - data.qx_low, oversampling)
-    qy_width = oversample_2d(data.qy_high - data.qy_low, oversampling)
     qx_width = oversample_2d(data.qx_hi - data.qx_lo, oversampling)
     qy_width = oversample_2d(data.qy_hi - data.qy_lo, oversampling)
     original_lookups = (np.floor_divide(o_qxi, oversampling), np.floor_divide(o_qyi, oversampling))
-    o_qx = data.qx_low[original_lookups] + (qx_width * o_qx_offsets)
-    o_qy = data.qy_low[original_lookups] + (qy_width * o_qy_offsets)
     o_qx = data.qx_lo[original_lookups] + (qx_width * o_qx_offsets)
     o_qy = data.qy_lo[original_lookups] + (qy_width * o_qy_offsets)
     o_qz = oversample_2d(data.qz, oversampling)
@@ -1698,7 +1686,7 @@ def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box
     | 2019-07-04 Brian Maranville
     | 2019-07-14 Brian Maranville
     """
-        # data (that is going through reduction), empty beam,
+    # data (that is going through reduction), empty beam,
     # div, Transmission of the sample, instrument(NG3.NG5, NG7)
     # ALL from metadata
     detCnt = empty.metadata['run.detcnt']
@@ -1743,6 +1731,8 @@ def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box
     print("DETCNT: ", detCnt)
     print('attentrans: ', attenTrans)
     print('monCnt: ', monCnt)
+    print('pixel: ', pixel)
+    print('sdd: ', sdd)
 
     #------End Result-------#
     # This assumes that the data is has not been normalized at all.
@@ -1758,6 +1748,7 @@ def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box
     print('Tsam_factor: ', Tsam_factor.x)
 
     #-----Using Kappa to Scale data-----#
+    
     Dsam = sample.metadata['sample.thk']
     ABS = sample.copy()
     ABS /=(kappa*Dsam*Tsam_factor)
