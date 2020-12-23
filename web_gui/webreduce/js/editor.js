@@ -212,7 +212,9 @@ function module_clicked_single() {
   let fileinfos = (module_def.fields || []).filter(f => (f.datatype == 'fileinfo'));
   filebrowser.instance.blocked = (fileinfos.length < 1);
   
-  var terminals_to_calculate = module_def.inputs.map(function(inp) {return inp.id});
+  var terminals_to_calculate = module_def.inputs
+    .filter(function(inp) {return /\.params$/.test(inp.datatype)})
+    .map(function(inp) {return inp.id});
   var fields_in = {};
   if (data_to_show != null && terminals_to_calculate.indexOf(data_to_show) < 0) {
     terminals_to_calculate.push(data_to_show);
@@ -702,7 +704,7 @@ var export_handlers = {
         // hoisting is required... 
         var message = event.data;
         if (message.connection_id == connection_id) {
-          window.removeEventListener("message", arguments.callee);
+          window.removeEventListener("message", connection_callback);
           if (message.ready) {
             webapp.postMessage({method: data.method, args: [exported], connection_id: connection_id}, "*");
           }
@@ -781,7 +783,7 @@ editor.export_data = function() {
       export_dialog.instance.export_targets = export_targets;
       export_dialog.instance.retrieved(suggested_name);
       export_dialog.instance.$once("export-route", function(filename, target) {
-        export_handlers[target.type](exported, filename, target.data || {});
+        export_handlers[target.type](exported, filename, target || {});
       })
     });
   }
@@ -832,6 +834,7 @@ editor.switch_instrument = async function(instrument_id, load_default=true) {
     let categories = editor.instruments[instrument_id].categories;
     let old_categories = vueMenu.instance.categories;
     old_categories.splice(0, old_categories.length, ...categories);
+    vueMenu.instance.default_categories = extend(true, [], categories);
     vueMenu.instance.predefined_templates = Object.keys(instrument_def.templates || {});
     vueMenu.instance.current_instrument = instrument_id;
     let template_names = Object.keys(instrument_def.templates);
@@ -955,5 +958,9 @@ editor.load_metadata = async function(files_metadata, datasource, path) {
   });
   
   editor._datafiles = results;
+  try {
+    vueMenu.instance.category_keys = get_all_keys(results[0]["values"][0])
+  }
+  catch(e) {}
   return file_objs;
 }

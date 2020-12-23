@@ -18,3 +18,5 @@ __pycache__
 /web_gui/files_cache/*
 reductus.egg-info/*
 *ipynb_checkpoints*
+**/files_cache/
+**/cache/
