@@ -1221,6 +1221,61 @@ def monitor_normalize(sansdata, mon0=1e8):
     res.data *= mon0/monitor
     return res
 
+# @module
+# def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans,empty_cell_trans):
+#     '''
+#     Needs to be debugged // annotated
+#     
+#     Should only use module operations!!!
+#     '''
+#     A = subtract(sample_scatt, blocked_scatt, align_by='run.configuration')+
+#     B = subtract(blocked_scatt, empty_cell_scatt, align_by='run.configuration')
+#     C = product(data, sample_trans, align_by="det.des_dis,resolution.lmda,run.guide")
+#     D = divide(data,empty_cell_trans)
+#     COR = subtract(A, D, align_by='run.configuration')
+#     return COR
+
+@module
+def wide_angle_correction(sansdata,trans):
+    '''
+    Wide angle transmission correction (see WorkFileUtils.ipf)
+    
+    **Inputs**
+
+    sansdata (sans2d): measurement with sample in the beam
+    
+    trans (params[]?): transmission to use in correction
+    
+    **Returns**
+    
+    output (sans2d): corrected for wide_angle
+    
+    correction (sans2d): correction image for each pixel
+    '''
+    
+    #sansdata = sansdata[0]
+    trans = trans[0]
+    if sansdata.theta is None:
+        raise ValueError("Theta is not defined - convert pixels to Q first (use PixelsToQ module)")
+        
+    if trans is None:
+        trans = 1.0
+    else:
+        trans = trans.params['factor']
+    
+    res = sansdata.copy()
+    
+    uval = -1.0*np.log(trans)
+    arg = (1 - np.cos(res.theta))/np.cos(res.theta)
+    correction = (1 - np.exp(-uval*arg))/(uval*arg)
+    correction = SansData(correction,metadata=res.metadata)
+    
+    res.data.x /= correction.data.x
+    
+    
+    return res,correction
+
+
 @module
 def generate_transmission(in_beam, empty_beam, integration_box=[55, 74, 53, 72], align_by="run.configuration", auto_integrate=True, margin=5):
     """
@@ -2091,8 +2146,8 @@ def SuperLoadSANS(filelist=None,
     """
     data = LoadSANS(filelist, flip=False, transpose=False, check_timestamps=check_timestamps)
     
-    data = ApplyCorrections(filelist, do_pixels_to_q, do_solid_angle_correct, do_det_eff, do_deadtime,
-                  deadtime, do_mon_norm, do_atten_correct, mon0, check_timestamps)
+    data = ApplyCorrections(data, do_pixels_to_q, do_solid_angle_correct, do_det_eff, do_deadtime,
+                  deadtime, do_mon_norm, do_atten_correct, mon0)
     return data 
 
 @nocache
@@ -2134,7 +2189,6 @@ def ApplyCorrections(data,
     output (sans2d[]): all the entries loaded.
     '''
     
-    if do_solid_angle_correct or do_pixels_t_q:
         data = [PixelsToQ(d,correct_solid_angle=do_solid_angle_correct) for d in data]
     if do_det_eff:
         data = [correct_detector_efficiency(d) for d in data]
