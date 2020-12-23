@@ -47,8 +47,10 @@ class SansData(object):
     def __init__(self, data=None, metadata=None, q=None, qx=None, qy=None, aspect_ratio=1.0,
                  xlabel="X", ylabel="Y",
                  theta=None, Tsam=None, Temp=None, 
+                 qx_min=None, qx_max=None, qy_min=None, qy_max=None,
+                 qx_lo=None, qx_hi=None, qy_lo=None, qy_hi=None,
                  attenuation_corrected=False,
-                 sensitivity_corrected=False):
+                 sensitivity_corrected=False, ):
         if isinstance(data, np.ndarray):
             # Data is counts, so variance is counts.  Set variance on zero counts to 1
             self.data = Uncertainty(data, data + (data==0))
@@ -60,10 +62,15 @@ class SansData(object):
         self.q = q
         self.qx = qx
         self.qy = qy
-        self.qx_max = None
-        self.qy_max = None
-        self.qx_min = None
-        self.qy_min = None
+        #bin edges
+        self.qx_hi = qx_hi
+        self.qy_hi = qy_hi
+        self.qx_lo = qx_lo
+        self.qy_lo = qy_lo
+        self.qx_max = qx_max
+        self.qy_max = qy_max
+        self.qx_min = qx_min
+        self.qy_min = qy_min
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.aspect_ratio = aspect_ratio
@@ -119,6 +126,8 @@ class SansData(object):
         return SansData(copy(self.data), deepcopy(self.metadata),
                         q=copy(self.q), qx=copy(self.qx), qy=copy(self.qy),
                         theta=copy(self.theta), aspect_ratio=self.aspect_ratio,
+                        qx_min=self.qx_min, qx_max=self.qx_max, qy_min=self.qy_min, qy_max=self.qy_max,
+                        qx_lo=self.qx_lo, qx_hi=self.qx_hi, qy_lo=self.qy_lo,qy_hi=self.qy_hi,
                         xlabel=self.xlabel, ylabel=self.ylabel,
                         attenuation_corrected=self.attenuation_corrected,
                         sensitivity_corrected=self.sensitivity_corrected,

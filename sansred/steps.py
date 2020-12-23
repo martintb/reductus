@@ -282,6 +282,7 @@ def LoadSANS(filelist=None, flip=False, transpose=False, check_timestamps=True):
     **Returns**
 
     output (raw[]): all the entries loaded.
+    output (sans2d[]): all the entries loaded.
 
     | 2019-07-26 Brian Maranville
     | 2019-08-09 Brian Maranville adding new stripped sample description
@@ -712,10 +713,13 @@ def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
     X_low = sx3*np.tan((x - 0.5 - xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
     X_high = sx3*np.tan((x + 0.5 - xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
     Y_low = sy3*np.tan((y - 0.5 - ycenter)*sy/sy3) - dybm
+    Y_low  = sy3*np.tan((y - 0.5 - ycenter)*sy/sy3) - dybm
     Y_high = sy3*np.tan((y + 0.5 - ycenter)*sy/sy3) - dybm
 
     r_low, theta_low, q_low, phi_low, qx_low, qy_low, qz_low = _calculate_Q(X_low, Y_low, Z, q0)
     r_high, theta_high, q_high, phi_high, qx_high, qy_high, qz_high = _calculate_Q(X_high, Y_high, Z, q0)
+    r_lo, theta_lo, q_lo, phi_lo, qx_lo, qy_lo, qz_lo = _calculate_Q(X_low, Y_low, Z, q0)
+    r_hi, theta_hi, q_hi, phi_hi, qx_hi, qy_hi, qz_hi = _calculate_Q(X_high, Y_high, Z, q0)
 
     #Adding res.q
     res.q = q
@@ -727,6 +731,10 @@ def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
     res.qy_low = qy_low
     res.qx_high = qx_high
     res.qy_high = qy_high
+    res.qx_lo = qx_lo
+    res.qy_lo = qy_lo
+    res.qx_hi = qx_hi
+    res.qy_hi = qy_hi
 
     res.X = X
     res.Y = Y
@@ -912,9 +920,13 @@ def circular_av_new(data, q_min=None, q_max=None, q_step=None, mask_width=3, dQ_
     o_qy_offsets = ((o_qyi % oversampling) + 0.5) / oversampling
     qx_width = oversample_2d(data.qx_high - data.qx_low, oversampling)
     qy_width = oversample_2d(data.qy_high - data.qy_low, oversampling)
+    qx_width = oversample_2d(data.qx_hi - data.qx_lo, oversampling)
+    qy_width = oversample_2d(data.qy_hi - data.qy_lo, oversampling)
     original_lookups = (np.floor_divide(o_qxi, oversampling), np.floor_divide(o_qyi, oversampling))
     o_qx = data.qx_low[original_lookups] + (qx_width * o_qx_offsets)
     o_qy = data.qy_low[original_lookups] + (qy_width * o_qy_offsets)
+    o_qx = data.qx_lo[original_lookups] + (qx_width * o_qx_offsets)
+    o_qy = data.qy_lo[original_lookups] + (qy_width * o_qy_offsets)
     o_qz = oversample_2d(data.qz, oversampling)
     o_q = np.sqrt(o_qx**2 + o_qy**2 + o_qz**2)
     o_data = oversample_2d(data.data, oversampling) # Uncertainty object...
@@ -1157,6 +1169,7 @@ def correct_detector_efficiency(sansdata):
     # note that the theta calculated for this correction is based on the
     # center of the detector and NOT the center of the beam. Thus leave
     # the q-relevant theta alone.
+    # ??? 200905TBM: Theta isn't modified in this method??
     res.theta = copy(sansdata.theta)
 
     return res
