@@ -1522,26 +1522,36 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
         return [d / Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0)) for d,f in zip(data, factor_param)]
 
 @module
-def divide(data, factor_param):
+def divide(data, factor_param, align_by="resolution.lmda,run.guide"):
     """
     Algebraic multiplication of dataset
 
     **Inputs**
 
-    data (sans2d): data in (a)
+    data (sans2d[]): data in (a)
 
-    factor_param (params): denominator factor (b), defaults to 1
+    factor_param (params[]?): denominator factor (b), defaults to 1
+    
+    align_by (str): for multiple inputs, multiply data that matches factor_param with this 
+    metadata value
 
     **Returns**
 
-    output (sans2d): result (c in a*b = c)
+    output (sans2d[]): result (c in a/b = c)
 
     2010-01-01 unknown
     """
-    if factor_param is not None:
-        return data.__truediv__(factor_param.params['factor'])
-    else:
+    if not factor_param or len(factor_param) == 0:
         return data
+    elif len(factor_param) == 1:
+        f = factor_param[0]
+        return [(d / Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0))) for d in data]
+    elif align_by.lower() != "none":
+        # make lookup:
+        align_lookup = dict([(get_compound_key(f.params, align_by), Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0))) for f in factor_param])
+        return [(d / align_lookup[get_compound_key(d.metadata, align_by)]) for d in data]
+    else:# if align is None, match data by index
+        return [d / Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0)) for d,f in zip(data, factor_param)]
 
 def correct_solid_angle(sansdata):
     """
@@ -1749,7 +1759,9 @@ def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box
 
     #-----Using Kappa to Scale data-----#
     Dsam = sample.metadata['sample.thk']
-    ABS = sample.__mul__(1/(kappa*Dsam*Tsam_factor))
+    ABS = sample.copy()
+    ABS /=(kappa*Dsam*Tsam_factor)
+    ABS /=div.data
 
     params = OrderedDict([
         ("DETCNT", detCnt.x),
@@ -2123,6 +2135,10 @@ def SuperLoadSANS(filelist=None,
 
     filelist (fileinfo[]): Files to open.
 
+    do_pixels_to_q {Calculate q-values.} (bool): Calculate q-values
+    
+    do_solid_angle_correct {Correct solid angle} (bool): correct solid angle
+    
     do_det_eff {Detector efficiency corr.} (bool): correct detector efficiency
 
     do_deadtime {Dead time corr.} (bool): correct for detector efficiency drop due to detector dead time
@@ -2189,6 +2205,7 @@ def ApplyCorrections(data,
     output (sans2d[]): all the entries loaded.
     '''
     
+    if do_solid_angle_correct or do_pixels_to_q:
         data = [PixelsToQ(d,correct_solid_angle=do_solid_angle_correct) for d in data]
     if do_det_eff:
         data = [correct_detector_efficiency(d) for d in data]
