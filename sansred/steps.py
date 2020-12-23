@@ -2097,16 +2097,42 @@ def SuperLoadSANS(filelist=None,
 
 @nocache
 @module
-def ApplyCorrections(filelist=None, 
-                    do_pixels_to_q=False, 
-                    do_solid_angle_correct=True, 
-                    do_det_eff=True, 
-                    do_deadtime=True,
-                    deadtime=1.0e-6, 
-                    do_mon_norm=True, 
-                    do_atten_correct=True, 
-                    mon0=1e8,
-                    check_timestamps=True):
+def ApplyCorrections(data, 
+                     do_pixels_to_q=False, 
+                     do_solid_angle_correct=True, 
+                     do_det_eff=True, 
+                     do_deadtime=True,
+                     deadtime=1.0e-6, 
+                     do_mon_norm=True, 
+                     do_atten_correct=True, 
+                     mon0=1e8,
+                    ):
+    '''
+    **Inputs**
+
+    data (sans2d[]): data to correct
+
+    do_pixels_to_q {Calculate q-values.} (bool): Calculate q-values
+    
+    do_solid_angle_correct {Correct solid angle} (bool): correct solid angle
+    
+    do_det_eff {Detector efficiency corr.} (bool): correct detector efficiency
+
+    do_deadtime {Dead time corr.} (bool): correct for detector efficiency drop due to detector dead time
+
+    deadtime {Dead time value} (float): value of the dead time in the calculation above
+
+    do_atten_correct {Attenuation correction} (bool): correct intensity for the attenuators in the beam
+
+    do_mon_norm {Monitor normalization} (bool): normalize data to a provided monitor value
+
+    mon0 (float): provided monitor
+    
+
+    **Returns**
+
+    output (sans2d[]): all the entries loaded.
+    '''
     
     if do_solid_angle_correct or do_pixels_t_q:
         data = [PixelsToQ(d,correct_solid_angle=do_solid_angle_correct) for d in data]
