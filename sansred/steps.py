@@ -1481,6 +1481,19 @@ def product(data, factor_param, align_by="det.des_dis,resolution.lmda,run.guide"
         return [(d * align_lookup[get_compound_key(d.metadata, align_by)]) for d in data]
     else:
         return [d * Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0)) for d,f in zip(data, factor_param)]
+
+def uncertainty_to_params(u,metadata):
+    return Parameters(OrderedDict([
+               ("factor", u.x), 
+               ("factor_variance", u.variance),
+               ("factor_err", np.sqrt(u.variance)),
+               ("run.configuration", metadata.get('run.configuration',None)),
+               ("sample.description", metadata.get('sample.description',None)),
+               ("det.des_dis", metadata.get('det.des_dis',None)),
+               ("resolution.lmda", metadata.get('resolution.lmda')),
+               ("run.guide", metadata.get('run.guide',None)),
+               ("box_used", metadata.get('box_used',None))
+           ]))
     
 @module
 def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lmda,run.guide"):
@@ -1500,41 +1513,42 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
 
     output (params[]): result (c in a/b = c)
 
-    2010-01-01 unknown
+    2010-12-24 Tyler Martin
     """
+
     
-    if (not factor_param1) or (len(factor_param1) == 0):
-        factor_param1 = [Parameters(
-            OrderedDict([ 
-                ("factor", 1.0), 
-                ("factor_variance", 0.0),
-                ("factor_err", 0.0)
-            ])
-        )]
-        
-    elif (not factor_param2) or (len(factor_param2) == 0):
-        factor_param2 = [Parameters(
-            OrderedDict([ 
-                ("factor", 1.0), 
-                ("factor_variance", 0.0),
-                ("factor_err", 0.0)
-            ])
-        )]
-    
-    elif len(factor_param) == 1:
-        f = factor_param[0]
-        return [(d / Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0))) for d in data]
+    noParm1 = (not factor_param1) or (len(factor_param1)==0)
+    noParm2 = (not factor_param2) or (len(factor_param2)==0)
+    oneParm1 = (len(factor_param1)==1)
+    oneParm2 = (len(factor_param2)==1)
+    if noParm1 and noParm2:
+        output = [uncertainty_to_params(Uncertainty(1.0,0.0),{})]
+
+    elif noParm2 or oneParm2:
+        if oneParm2:
+            f2 = factor_param2[0]
+            f2_U = Uncertainty(f2.params.get('factor', 1.0), f2.params.get('factor_variance', 0.0)) 
+        else:
+            f2_U = Uncertainty(1.0,0.0) 
+
+        output = []
+        for f1 in factor_param1:
+            f1_U = Uncertainty(f1.params.get('factor', 1.0), f1.params.get('factor_variance', 0.0)) 
+            output.append(uncertainty_to_params(f1_U/f2_U,f1.params))
+    elif noParm1 or oneParm1:
+        if oneParm1:
+            f1 = factor_param1[0]
+            f1_U = Uncertainty(f1.params.get('factor', 1.0), f1.params.get('factor_variance', 0.0)) 
+        else:
+            f1_U = Uncertainty(1.0,0.0) 
+
+        output = []
+        for f2 in factor_param2:
+            f2_U = Uncertainty(f2.params.get('factor', 1.0), f2.params.get('factor_variance', 0.0)) 
+            output.append(uncertainty_to_params(f1_U/f2_U,f2.params))
+
     elif align_by.lower() != "none":
         # make lookup:
-        align_lookup1 = {}
-        for f in factor_param1:
-            key = get_compound_key(f.params, align_by)
-            value =  Uncertainty(
-                f.params.get('factor', 1.0), 
-                f.params.get('factor_variance', 0.0)
-            )
-            align_lookup1[key] = value
-            
         align_lookup2 = {}
         for f in factor_param2:
             key = get_compound_key(f.params, align_by)
@@ -1543,11 +1557,23 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
                 f.params.get('factor_variance', 0.0)
             )
             align_lookup2[key] = value
+
+        output = []
+        for f1 in factor_param1:
+            key = get_compound_key(f1.params, align_by)
+            f1_U= Uncertainty(f1.params.get('factor', 1.0), f1.params.get('factor_variance', 0.0)) 
+            ratio = f1_U/align_lookup2[key]
+            output.append(uncertainty_to_params(ratio,f.params))
             
-        align_lookup2 = dict([(get_compound_key(f.params, align_by), Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0))) for f in factor_param2])
-        return [(d / align_lookup2[get_compound_key(d.metadata, align_by)]) for d in data]
     else:# if align is None, match data by index
-        return [d / Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0)) for d,f in zip(data, factor_param)]
+        output = []
+        for f1,f2 in zip(factor_param1,factor_param2):
+            f1_U = Uncertainty(f1.params.get('factor', 1.0), f1.params.get('factor_variance', 0.0)) 
+            f2_U = Uncertainty(f2.params.get('factor', 1.0), f2.params.get('factor_variance', 0.0)) 
+            ratio = f1_U/align_lookup2[key]
+            output.append(uncertainty_to_params(ratio,f1.params))
+
+    return output
 
 @module
 def divide(data, factor_param, align_by="resolution.lmda,run.guide"):
