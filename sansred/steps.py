@@ -891,10 +891,9 @@ def oversample_2d(input_array, oversampling):
 
 @nocache #nocache
 @module
-def circular_av_new(data, q_min=None, q_max=None, q_step=None, mask_width=3, dQ_method='none'):
+def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_method='none'):
     """
     Using a circular average, it converts data to 1D (Q vs. I)
-
 
     **Inputs**
 
@@ -906,7 +905,7 @@ def circular_av_new(data, q_min=None, q_max=None, q_step=None, mask_width=3, dQ_
 
     q_step (float): step size for Q bins (defaults to minimum qx step)
 
-    mask_width (int): number of pixels to mask around the perimeter of the detector
+    mask_data (sans2d): mask file loaded from disk
 
     dQ_method (opt:none|IGOR|statistical) : method for calculating dQ
 
@@ -923,11 +922,8 @@ def circular_av_new(data, q_min=None, q_max=None, q_step=None, mask_width=3, dQ_
     | 2019-12-11 Brian Maranville adding dQ_method opts
     """
 
-    # adding simple width-based mask around the perimeter:
-    mask = np.zeros_like(data.q, dtype=np.bool)
-    mask_width = abs(mask_width)
-    if (mask_width > 0):
-        mask[mask_width:-mask_width, mask_width:-mask_width] = True
+    if mask_data is not None:
+        mask = ~mask_data.data.x.astype(bool)
     else:
         mask[:] = True
 

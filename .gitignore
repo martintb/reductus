@@ -20,3 +20,4 @@ reductus.egg-info/*
 *ipynb_checkpoints*
 **/files_cache/
 **/cache/
+*swp
