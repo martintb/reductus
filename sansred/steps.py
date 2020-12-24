@@ -109,6 +109,48 @@ def LoadDIV(filelist=None, variance=0.0001):
             output.append(sens)
     return output
 
+@module
+def LoadMASK(filelist=None, variance=0.0001):
+    """
+    loads a MASK file (??? format) into a SansData obj and returns that.
+
+    **Inputs**
+
+    filelist (fileinfo[]): Files to open.
+
+    variance (float): Target variance of DIV measurement (default 0.0001, i.e. 1% error)
+    
+    **Returns**
+
+    output (sans2d[]): all the entries loaded.
+
+    2020-12-24 Tyler Martin
+    """
+    from dataflow.fetch import url_get
+    from .sans_vaxformat import readMask
+
+    output = []
+    if filelist is not None:
+        for fileinfo in filelist:
+            path, mtime, entries = fileinfo['path'], fileinfo.get('mtime', None), fileinfo.get('entries', None)
+            name = basename(path)
+            fid = BytesIO(url_get(fileinfo, mtime_check=False))
+            mask_raw = readMask(fid)
+            mask = SansData(Uncertainty(mask_raw, mask_raw * variance))
+            mask.metadata = OrderedDict([
+                ("run.filename", name),
+                ("analysis.groupid", -1),
+                ("analysis.intent", "MASK"),
+                ("analysis.filepurpose", "MASK"),
+                ("run.experimentScanID", name), 
+                ("sample.description", "MASK"),
+                ("entry", "entry"),
+                ("sample.labl", "MASK"),
+                ("run.configuration", "MASK"),
+            ])
+            output.append(mask)
+    return output
+
 @nocache
 @module
 def LoadRawSANS(filelist=None, check_timestamps=True):
@@ -152,6 +194,8 @@ def LoadRawSANS(filelist=None, check_timestamps=True):
             ])
             sens = RawSANSData(metadata=metadata, detectors=detectors)
             entries = [sens]
+        elif name.upper().endswith(".MASK"):
+            entries = LoadMASK([fileinfo])
         else:
             entries = readSANSNexuz(name, fid)
         

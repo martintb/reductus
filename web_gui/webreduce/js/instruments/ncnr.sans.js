@@ -33,10 +33,11 @@ function load_sans(load_params, db, noblock, return_type) {
 var NEXUZ_REGEXP = /\.nxz\.[^\.\/]+$/
 var NEXUS_REGEXP = /\.nxs\.[^\.\/]+(\.zip)?$/
 var DIV_REGEXP = /\.DIV$/
+var MASK_REGEXP = /\.MASK$/
 
 instrument.files_filter = function(x) {
   return (
-    ((NEXUS_REGEXP.test(x) || DIV_REGEXP.test(x)) &&
+    ((NEXUS_REGEXP.test(x) || DIV_REGEXP.test(x) || MASK_REGEXP.test(x)) &&
         (/^(fp_)/.test(x) == false) &&
         (/^rapidscan/.test(x) == false) &&
         (/^scripted_findpeak/.test(x) == false))
