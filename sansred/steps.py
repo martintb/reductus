@@ -790,6 +790,70 @@ def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
     calculateMeanQ(res)
     return res
 
+def mask_action(data=None, mask_indices=None, **kwargs):
+    """
+    Remove data at the indicated indices
+    """
+    if mask_indices:
+        data = copy(data)
+        data.mask_indices = mask_indices
+    return data
+
+@module
+def join_sansIQ(data):
+    """
+    Join all sansIQ into a single dataset
+
+    **Inputs**
+
+    data (sansIQ[]): data to be joined together
+
+    **Returns**
+
+    output (sansIQ): joined data
+
+    """
+    print(data)
+    if len(data)<=1:
+        return data
+    else:
+        output = deepcopy(data[0])
+        for d in data[1:]:
+            output.append(d)
+        return output
+
+
+@module
+def mask_points(data, mask_indices=None):
+    """
+    Identify and mask out user-specified points.
+
+    This defines the *mask* attribute of *data* to include all data
+    except those indicated in *mask_indices*.  Any previous mask is cleared.
+    The masked data are not actually removed from the data, since this
+    operation is done by *join*.
+
+    **Inputs**
+
+    data (sansIQ) : background data which may contain specular point
+
+    mask_indices (index[]*) : 0-origin data point indices to mask. For example,
+    *mask_indices=[1,4,6]* masks the 2nd, 5th and 7th point respectively. Each
+    dataset should have its own mask.
+
+    **Returns**
+
+    output (sansIQ) : masked data
+
+    | 2018-04-30 Brian Maranville
+    | 2019-07-02 Brian Maranville: change self.points after mask
+    """
+    data = copy(data)
+    print('INDICES:',mask_indices)
+    print('DATA:',data)
+    output = mask_action(data=data, mask_indices=mask_indices)
+    return output
+
 @nocache
 @module
 def circular_av(data):
