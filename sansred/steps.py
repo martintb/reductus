@@ -813,7 +813,6 @@ def join_sansIQ(data):
     output (sansIQ): joined data
 
     """
-    print(data)
     if len(data)<=1:
         return data
     else:
@@ -849,8 +848,6 @@ def mask_points(data, mask_indices=None):
     | 2019-07-02 Brian Maranville: change self.points after mask
     """
     data = copy(data)
-    print('INDICES:',mask_indices)
-    print('DATA:',data)
     output = mask_action(data=data, mask_indices=mask_indices)
     return output
 
@@ -987,9 +984,10 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
     """
 
     if mask_data is not None:
+        #need to invert mask
         mask = ~mask_data.data.x.astype(bool)
     else:
-        mask[:] = True
+        mask = np.ones_like(data.q, dtype=np.bool)
 
     # calculate the change in q that corresponds to a change in pixel of 1
     if data.qx is None:
@@ -1781,7 +1779,7 @@ def correct_attenuation(sample, instrument="NG7"):
 
 @nocache
 @module
-def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box=[55, 74, 53, 72], auto_box=True, margin=5):
+def absolute_scaling(empty_list, sample_list, Tsam_list, div, instrument="NG7", integration_box=[55, 74, 53, 72], auto_box=True, margin=5,align_by="resolution.lmda,run.guide"):
     """
     Calculate absolute scaling
 
@@ -1789,11 +1787,11 @@ def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box
 
     **Inputs**
 
-    empty (sans2d): measurement with no sample in the beam
+    empty_list (sans2d[]): measurement with no sample in the beam
 
-    sample (sans2d): measurement with sample in the beam
+    sample_list (sans2d[]): measurement with sample in the beam
 
-    Tsam (params): sample transmission
+    Tsam_list (params[]): sample transmission
 
     div (sans2d): DIV measurement
 
@@ -1806,94 +1804,108 @@ def absolute_scaling(empty, sample, Tsam, div, instrument="NG7", integration_box
     margin {Box margin, width = 4*gauss_width + 2*margin:} (int): Extra margin 
     to add to automatically calculated peak width in x and y
 
+    align_by (str): for multiple inputs, align data by this key
+
     **Returns**
 
-    abs (sans2d): data on absolute scale
+    abs (sans2d[]): data on absolute scale
 
-    params (params): parameter outputs
+    params (params[]): parameter outputs
 
     | 2017-01-13 Andrew Jackson
     | 2019-07-04 Brian Maranville
     | 2019-07-14 Brian Maranville
     """
-    # data (that is going through reduction), empty beam,
-    # div, Transmission of the sample, instrument(NG3.NG5, NG7)
-    # ALL from metadata
-    detCnt = empty.metadata['run.detcnt']
-    countTime = empty.metadata['run.rtime']
-    monCnt = empty.metadata['run.moncnt']
-    sampleOff = empty.metadata["sample.position"]
-    sdd = empty.metadata["det.dis"] + sampleOff # already in cm
-    pixel = empty.metadata['det.pixelsizex'] # already in cm
-    lambd = wavelength = empty.metadata['resolution.lmda']
 
-    if not empty.attenuation_corrected:
-        attenNo = empty.metadata['run.atten']
-        # Need attenTrans - AttenuationFactor - need to know whether NG3, NG5 or NG7 (acctStr)
-        attenuation = lookup_attenuation(instrument, attenNo, wavelength)
-        att = attenuation['att']
-        percent_err = attenuation['att_err']
-        att_variance = (att*percent_err/100.0)**2
-        attenTrans = Uncertainty(att, att_variance)
-    else:
-        # If empty is already corrected for attenuation, don't do it here:
-        attenTrans = Uncertainty(1.0, 0.0)
+    eb_lookup = dict([(get_compound_key(eb.metadata, 'det.des_dis,resolution.lmda'), eb) for eb in empty_list])
+    ts_lookup = dict([(get_compound_key(ts.params, 'resolution.lmda'), ts) for ts in Tsam_list])
+    ABS_list = []
+    params_list = []
+    for sample in sample_list:
+        empty     = eb_lookup[get_compound_key(sample.metadata,'det.des_dis,resolution.lmda')]
+        Tsam      = ts_lookup[get_compound_key(sample.metadata,'resolution.lmda')]
 
-    #-------------------------------------------------------------------------------------#
 
-    # Correct empty beam by the sensitivity
-    data = empty.data/div.data
-    # Then take the sum in XY box, including stat. error
-    if auto_box:
-        height, x, y, width_x, width_y = moments(empty.data.x)
-        center_x = x + 0.5
-        center_y = y + 0.5
+        # data (that is going through reduction), empty beam,
+        # div, Transmission of the sample, instrument(NG3.NG5, NG7)
+        # ALL from metadata
+        detCnt = empty.metadata['run.detcnt']
+        countTime = empty.metadata['run.rtime']
+        monCnt = empty.metadata['run.moncnt']
+        sampleOff = empty.metadata["sample.position"]
+        sdd = empty.metadata["det.dis"] + sampleOff # already in cm
+        pixel = empty.metadata['det.pixelsizex'] # already in cm
+        lambd = wavelength = empty.metadata['resolution.lmda']
 
-        xmin = int(max(0, np.floor(center_x - width_x*2.0) - margin))
-        xmax = int(min(empty.data.shape[0], np.ceil(center_x + width_x*2.0) + margin))
-        ymin = int(max(0, np.floor(center_y - width_y*2.0) - margin))
-        ymax = int(min(empty.data.shape[1], np.ceil(center_y + width_y*2.0) + margin))
-    
-    else:
-        xmin, xmax, ymin, ymax = map(int, integration_box)
+        if not empty.attenuation_corrected:
+            attenNo = empty.metadata['run.atten']
+            # Need attenTrans - AttenuationFactor - need to know whether NG3, NG5 or NG7 (acctStr)
+            attenuation = lookup_attenuation(instrument, attenNo, wavelength)
+            att = attenuation['att']
+            percent_err = attenuation['att_err']
+            att_variance = (att*percent_err/100.0)**2
+            attenTrans = Uncertainty(att, att_variance)
+        else:
+            # If empty is already corrected for attenuation, don't do it here:
+            attenTrans = Uncertainty(1.0, 0.0)
 
-    detCnt = np.sum(data[xmin:xmax+1, ymin:ymax+1])
-    print("DETCNT: ", detCnt)
-    print('attentrans: ', attenTrans)
-    print('monCnt: ', monCnt)
-    print('pixel: ', pixel)
-    print('sdd: ', sdd)
+        #-------------------------------------------------------------------------------------#
 
-    #------End Result-------#
-    # This assumes that the data is has not been normalized at all.
-    # Thus either fix this or pass un-normalized data.
-    # Compute kappa = incident intensity * solid angle of the pixel
-    kappa = detCnt / attenTrans * 1.0e8 / monCnt * (pixel/sdd)**2
-    print("Kappa: ", kappa.x, "+/-", np.sqrt(kappa.variance))
+        # Correct empty beam by the sensitivity
+        data = empty.data/div.data
+        # Then take the sum in XY box, including stat. error
+        if auto_box:
+            height, x, y, width_x, width_y = moments(empty.data.x)
+            center_x = x + 0.5
+            center_y = y + 0.5
 
-    #utc_datetime = date.datetime.utcnow()
-    #print(utc_datetime.strftime("%Y-%m-%d %H:%M:%S"))
+            xmin = int(max(0, np.floor(center_x - width_x*2.0) - margin))
+            xmax = int(min(empty.data.shape[0], np.ceil(center_x + width_x*2.0) + margin))
+            ymin = int(max(0, np.floor(center_y - width_y*2.0) - margin))
+            ymax = int(min(empty.data.shape[1], np.ceil(center_y + width_y*2.0) + margin))
+        
+        else:
+            xmin, xmax, ymin, ymax = map(int, integration_box)
 
-    Tsam_factor = Uncertainty(Tsam.params['factor'], Tsam.params['factor_variance'])
-    print('Tsam_factor: ', Tsam_factor.x)
+        detCnt = np.sum(data[xmin:xmax+1, ymin:ymax+1])
+        print("DETCNT: ", detCnt)
+        print('attentrans: ', attenTrans)
+        print('monCnt: ', monCnt)
+        print('pixel: ', pixel)
+        print('sdd: ', sdd)
 
-    #-----Using Kappa to Scale data-----#
-    
-    Dsam = sample.metadata['sample.thk']
-    ABS = sample.copy()
-    ABS /=(kappa*Dsam*Tsam_factor)
-    ABS /=div.data
+        #------End Result-------#
+        # This assumes that the data is has not been normalized at all.
+        # Thus either fix this or pass un-normalized data.
+        # Compute kappa = incident intensity * solid angle of the pixel
+        kappa = detCnt / attenTrans * 1.0e8 / monCnt * (pixel/sdd)**2
+        print("Kappa: ", kappa.x, "+/-", np.sqrt(kappa.variance))
 
-    params = OrderedDict([
-        ("DETCNT", detCnt.x),
-        ("attentrans", attenTrans.x),
-        ("monCnt", monCnt),
-        ("kappa", kappa.x),
-        ("Dsam", Dsam),
-        ("box_used", {"xmin": xmin, "xmax": xmax, "ymin": ymin, "ymax": ymax})
-    ])
-    #------------------------------------
-    return ABS, Parameters(params)
+        #utc_datetime = date.datetime.utcnow()
+        #print(utc_datetime.strftime("%Y-%m-%d %H:%M:%S"))
+
+        Tsam_factor = Uncertainty(Tsam.params['factor'], Tsam.params['factor_variance'])
+        print('Tsam_factor: ', Tsam_factor.x)
+
+        #-----Using Kappa to Scale data-----#
+        
+        Dsam = sample.metadata['sample.thk']
+        ABS = sample.copy()
+        ABS /=(kappa*Dsam*Tsam_factor)
+        ABS /=div.data
+
+        params = OrderedDict([
+            ("DETCNT", detCnt.x),
+            ("attentrans", attenTrans.x),
+            ("monCnt", monCnt),
+            ("kappa", kappa.x),
+            ("Dsam", Dsam),
+            ("box_used", {"xmin": xmin, "xmax": xmax, "ymin": ymin, "ymax": ymax})
+        ])
+        #------------------------------------
+        ABS_list.append(ABS)
+        params_list.append(Parameters(params))
+    return ABS_list,params_list
 
 @nocache
 @module
