@@ -221,6 +221,7 @@ class Sans1dData(object):
         self.metadata = metadata if metadata is not None else {}
         self.fit_function = fit_function
 
+
     def to_dict(self):
         props = dict([(p, getattr(self, p, None)) for p in self.properties])
         return _toDictItem(props, convert_bytes=True)
@@ -272,14 +273,38 @@ class Sans1dData(object):
 
 class SansIQData(object):
     def __init__(self, I=None, dI=None, Q=None, dQ=None, meanQ=None, ShadowFactor=None, label='', metadata=None):
-        self.I = I
-        self.dI = dI
-        self.Q = Q
-        self.dQ = dQ
-        self.meanQ = meanQ
-        self.ShadowFactor = ShadowFactor
+        self._I = I
+        self._dI = dI
+        self._Q = Q
+        self._dQ = dQ
+        self._meanQ = meanQ
+        self._ShadowFactor = ShadowFactor
         self.label = label
         self.metadata = metadata if metadata is not None else {}
+        self.mask_indices = []
+        self.mask_reference = np.arange(len(I))
+    @property
+    def mask(self):
+        return ~np.in1d(self.mask_reference,self.mask_indices)
+    @property
+    def I(self):
+        return self._I[self.mask]
+    @property
+    def dI(self):
+        return self._dI[self.mask]
+    @property
+    def Q(self):
+        return self._Q[self.mask]
+    @property
+    def dQ(self):
+        return self._dQ[self.mask]
+    @property
+    def meanQ(self):
+        return self._meanQ[self.mask]
+    @property
+    def ShadowFactor(self):
+        return self._ShadowFactor[self.mask]
+
     
     def get_plottable(self):
         columns = OrderedDict([
