@@ -1971,8 +1971,16 @@ def addSimple(data):
     return output
 
 def get_compound_key(data_dict, compound_key, separator=","):
+    
     subkeys = [s.strip() for s in compound_key.split(separator)]
-    key = separator.join([_s(data_dict.get(sk, 'unknown')) for sk in subkeys])
+    key = []
+    for sk in subkeys:
+        #get value from data_dict, 'uknown' if not found
+        val = data_dict.get(sk,'unknown')
+        #make sure we are dealing with a string
+        val = str(_s(val))
+        key.append(val)
+    key = separator.join(key)
     return key
 
 @module
