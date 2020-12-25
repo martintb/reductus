@@ -283,6 +283,25 @@ class SansIQData(object):
         self.metadata = metadata if metadata is not None else {}
         self.mask_indices = []
         self.mask_reference = np.arange(len(I))
+
+    def append(self,data,sort=True):
+        self._I            = np.append(self.I,data.I)
+        self._dI           = np.append(self.dI,data.dI)
+        self._Q            = np.append(self.Q,data.Q)
+        self._dQ           = np.append(self.dQ,data.dQ)
+        self._meanQ        = np.append(self.meanQ,data.meanQ)
+        self._ShadowFactor = np.append(self.ShadowFactor,data.ShadowFactor)
+        self.mask_indices = []
+        self.mask_reference = np.arange(len(self._I))
+
+        if sort:
+            sort_mask = np.argsort(self._Q)
+            self._I = self._I[sort_mask]
+            self._dI = self._dI[sort_mask]
+            self._Q = self._Q[sort_mask]
+            self._dQ = self._dQ[sort_mask]
+            self._meanQ = self._meanQ[sort_mask]
+            self._ShadowFactor = self._ShadowFactor[sort_mask]
     @property
     def mask(self):
         return ~np.in1d(self.mask_reference,self.mask_indices)
@@ -324,10 +343,10 @@ class SansIQData(object):
             ("I*Q^2", {"values": (self.I * self.meanQ**2).tolist()}),
         ])
         
-        name = self.metadata.get("name", "default_name")
-        entry_name = self.metadata.get("entry", "default_entry")
+        name = self.metadata.get("run.experimentScanID", "default_name")
+        entry_name = self.metadata.get("sample.description", "default_entry")
         series = [{"label": "%s:%s" % (name, entry_name)}]
-        xcol = "Q"
+        xcol = "meanQ"
         ycol = "I"
         plottable = {
             "type": "nd",
