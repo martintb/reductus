@@ -177,26 +177,12 @@ def LoadRawSANS(filelist=None, check_timestamps=True):
     for fileinfo in filelist:
         path, mtime, entries = fileinfo['path'], fileinfo.get('mtime', None), fileinfo.get('entries', None)
         name = basename(path)
-        fid = BytesIO(url_get(fileinfo, mtime_check=check_timestamps))
         if name.upper().endswith(".DIV"):
-            sens_raw = readNCNRSensitivity(fid)
-            detectors = [{"detector": {"data": {"value": Uncertainty(sens_raw, sens_raw * 0.0001)}}}]
-            metadata = OrderedDict([
-                ("run.filename", name),
-                ("analysis.groupid", -1),
-                ("analysis.intent", "DIV"),
-                ("analysis.filepurpose", "Sensitivity"),
-                ("run.experimentScanID", name), 
-                ("sample.description", "PLEX"),
-                ("entry", "entry"),
-                ("sample.labl", "PLEX"),
-                ("run.configuration", "DIV"),
-            ])
-            sens = RawSANSData(metadata=metadata, detectors=detectors)
-            entries = [sens]
+            entries = LoadDIV([fileinfo])
         elif name.upper().endswith(".MASK"):
             entries = LoadMASK([fileinfo])
         else:
+            fid = BytesIO(url_get(fileinfo, mtime_check=check_timestamps))
             entries = readSANSNexuz(name, fid)
         
         data.extend(entries)
