@@ -837,6 +837,104 @@ def mask_points(data, mask_indices=None):
     output = mask_action(data=data, mask_indices=mask_indices)
     return output
 
+@module
+def shiftIQ(data,shift_data=True,shift_coeffs=None,shift_to=None):
+    '''
+    Shift multiple IQ Datasets to have overlap
+
+    **Inputs**
+
+    data (sansIQ[]): 1D data to be shifted
+
+    shift_data (bool): whether or not to shift the data
+
+    shift_coeffs (float[]*): predefined shift coefficients, if unspecified,
+    coeffs are automatically caclulated
+
+    shift_to (int): integer index of data to shift to. Integers specify data
+    with increasing q
+
+    **Returns**
+
+    output (sansIQ[]): shifted data
+
+    shift_coeff (params[]): shift coefficients
+
+    '''
+    if shift_data:
+        if shift_coeffs is not None:
+            assert len(data)==len(shift_coeffs), "Need to provide as many shift coeffs as data"
+        else:
+            if shift_to is None:
+                shift_to = len(data)-1#shift to highest q
+            max_q = [max(d.Q) for d in data]
+            sort_index = np.argsort(max_q)#data may not be in q-order
+            shift_coeffs = [1.0]*len(data)
+            for index in range(len(data)):
+                # determine which direction the shiftIndex is in (higher or lower q)
+                shiftDir = np.sign(index-shift_to) 
+                shift = 1.0 #default shift is no-shift
+                if not (shiftDir==0):
+                    # need to walk from "shiftIndex" curve back to currIndex
+                    # and 'build' shifting coefficient
+                    for j in range(shift_to,index,shiftDir):
+                        j1 = j
+                        j2 = j+shiftDir
+                        q1 = data[sort_index[j1]].Q
+                        I1 = data[sort_index[j1]].I
+                        q2 = data[sort_index[j2]].Q
+                        I2 = data[sort_index[j2]].I
+                        shiftFac = calcShift(q1,I1,q2,I2)[0]
+                        shift *= shiftFac
+                shift_coeffs[sort_index[index]] = shift
+        for d,s in zip(data,shift_coeffs):
+            d._I  *= s
+            d._dI *= s
+    else:
+        shift_coeffs = [1.0]*len(data)
+
+    shift_output = []
+    for d,s in zip(data,shift_coeffs):
+        od = OrderedDict([("factor", s), ("factor_variance", 0.0), ("factor_err", 0.0),('label',d.label)])
+        od.update(**d.metadata)
+        shift_output.append( Parameters(od))
+    return data,shift_output
+
+def calcShift(q1,I1,q2,I2):
+    '''Calculate the shift coefficient needed to align two intensity curves 
+    
+    The reduced, measured intensity from two different instrument configurations 
+    will often have vertical intensity shifts due to a number of measurement and 
+    instrumental reasons. This method allows one to calculate the scale factor needed
+    to bring the two curves into alignment.
+    
+    Arguments
+    ---------
+        q1,q2: np.ndarray
+            An array of q-values (wavenumbers) of each measured intensity input
+        
+        I1,I2: np.ndarray
+            An array of intensity values
+    
+    Returns
+    -------
+    scale factor mean: float
+        Average shift coefficient 
+    
+    scale factor std: float
+        Standard deviation of shift coefficient
+    '''
+    minQ = max(q1.min(),q2.min())
+    maxQ = min(q1.max(),q2.max())
+    mask = np.logical_and(q2>=minQ,q2<=maxQ)
+    if not mask.sum()>0:
+        raise ValueError('Need overlapping q in order to calculate shift factor! Did you trim too much?')
+    
+    I1p = np.interp(q2,q1,I1)
+    scale = I1p[mask]/I2[mask]
+    
+    return scale.mean(),scale.std()
+
 @nocache
 @module
 def circular_av(data):
