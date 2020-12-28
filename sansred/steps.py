@@ -1584,6 +1584,41 @@ def moments(data):
     height = data.max()
     return height, x, y, width_x, width_y
 
+def gaussian2D(XY,x0, y0, sig_x, sig_y, A, B):
+    x,y = XY.T
+    z = A*np.exp(-(((x-x0)/sig_x)**2 + ((y-y0)/sig_y)**2)/2.0) + B
+    return z
+
+def moments_fit(data):
+    import lmfit
+    x   = np.arange(0,data.shape[0],1)
+    y   = np.arange(0,data.shape[1],1)
+    X,Y = np.meshgrid(x,y,indexing='xy')
+    XY  = np.vstack((X.ravel(),Y.ravel())).T
+    
+    x0 = (X*data).sum()/data.sum()
+    y0 = (Y*data).sum()/data.sum()
+    
+    model  = lmfit.Model(gaussian2D)
+    params = lmfit.Parameters()
+    params.add('x0'   ,x0   ,min=0  ,max=127)
+    params.add('y0'   ,y0   ,min=0  ,max=127)
+    params.add('sig_x',1.0  ,min=0.1,max=25)
+    params.add('sig_y',1.0  ,min=0.1,max=25)
+    params.add('B'    ,0.0  ,min=0.0,vary=True)
+    params.add('A'    ,data.max())
+    
+    fit = model.fit(data.ravel(),XY=XY,params=params)
+    # the fit parameters need to be flipped in x and y to get the correct
+    # indexing
+    height = fit.params['A'].value
+    width_y = fit.params['sig_x'].value
+    width_x = fit.params['sig_y'].value
+    y = fit.params['x0'].value
+    x = fit.params['y0'].value
+    return height, x, y, width_x, width_y
+
+
 @module
 def subtract(subtrahend, minuend, align_by='run.configuration'):
     """
