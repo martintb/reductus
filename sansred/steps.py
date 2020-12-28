@@ -133,6 +133,7 @@ def LoadDIV(filelist=None, variance=0.0001):
             output.append(sens)
     return output
 
+@nocache
 @module
 def LoadMASK(filelist=None, variance=0.0001):
     """
@@ -809,6 +810,7 @@ def mask_action(data=None, mask_indices=None, **kwargs):
         data.mask_indices = mask_indices
     return data
 
+@nocache
 @module
 def join_sansIQ(data):
     """
@@ -832,6 +834,7 @@ def join_sansIQ(data):
         return output
 
 
+@nocache
 @module
 def mask_points(data, mask_indices=None):
     """
@@ -861,6 +864,7 @@ def mask_points(data, mask_indices=None):
     output = mask_action(data=data, mask_indices=mask_indices)
     return output
 
+@nocache
 @module
 def shiftIQ(data,shift_data=True,shift_coeffs=None,shift_to=None):
     '''
@@ -1289,6 +1293,7 @@ def sector_cut(data, sector=[0.0, 90.0], mirror=True):
 
     return nominal_output, mean_output
 
+@nocache
 @module
 def rescale_1d(data, scale=1.0, dscale=0.0):
     """
@@ -1315,6 +1320,7 @@ def rescale_1d(data, scale=1.0, dscale=0.0):
     
     return data
 
+@nocache
 @module
 def correct_detector_efficiency(sansdata):
     """
@@ -1372,6 +1378,7 @@ def correct_detector_efficiency(sansdata):
 
     return res
 
+@nocache
 @module
 def correct_dead_time(sansdata, deadtime=1.0e-6):
     """
@@ -1397,6 +1404,7 @@ def correct_dead_time(sansdata, deadtime=1.0e-6):
     result.data *= dscale
     return result
 
+@nocache
 @module
 def monitor_normalize(sansdata, mon0=1e8):
     """"
@@ -1433,6 +1441,7 @@ def monitor_normalize(sansdata, mon0=1e8):
 #     COR = subtract(A, D, align_by='run.configuration')
 #     return COR
 
+@nocache
 @module
 def wide_angle_correction(sansdata,trans):
     '''
@@ -1468,7 +1477,11 @@ def wide_angle_correction(sansdata,trans):
     correction = (1 - np.exp(-uval*arg))/(uval*arg)
     correction = SansData(correction,metadata=res.metadata)
     
+    # print('WAC:',sansdata.metadata['sample.labl'],)
+    # print('resdata.x[64,-5:]',res.data.x[64,-5:])
+    # print('correction.data.x[64,-5:]',correction.data.x[64,-5:])
     res.data.x /= correction.data.x
+    # print('resdata.x[64,-5:]',res.data.x[64,-5:])
     
     
     return res,correction
@@ -1998,10 +2011,14 @@ def absolute_scaling(empty_list, sample_list, Tsam_list, div, instrument="NG7", 
         data = empty.data/div.data
         # Then take the sum in XY box, including stat. error
         if auto_box:
-            height, x, y, width_x, width_y = moments(empty.data.x)
             height, x, y, width_x, width_y = moments_fit(empty.data.x)
             center_x = x + 0.5
             center_y = y + 0.5
+            print('----------------------')
+            print(f'AUTO_BOX:{sample.metadata["det.des_dis"]},{sample.metadata["resolution.lmda"]}')
+            print(f'HEIGHT:{height}')
+            print(f'x,y:{x},{y}')
+            print(f'width_x,width_y:{width_x},{width_y}')
 
             xmin = int(max(0, np.floor(center_x - width_x*2.0) - margin))
             xmax = int(min(empty.data.shape[0], np.ceil(center_x + width_x*2.0) + margin))
@@ -2039,6 +2056,9 @@ def absolute_scaling(empty_list, sample_list, Tsam_list, div, instrument="NG7", 
         ABS /=div.data
 
         params = OrderedDict([
+            ("sample.description", sample.metadata['sample.description']),
+            ("resolution.lambda", sample.metadata['resolution.lmda']),
+            ("det.des_dis", sample.metadata['det.des_dis']),
             ("DETCNT", detCnt.x),
             ("attentrans", attenTrans.x),
             ("monCnt", monCnt),
