@@ -1999,6 +1999,7 @@ def absolute_scaling(empty_list, sample_list, Tsam_list, div, instrument="NG7", 
         # Then take the sum in XY box, including stat. error
         if auto_box:
             height, x, y, width_x, width_y = moments(empty.data.x)
+            height, x, y, width_x, width_y = moments_fit(empty.data.x)
             center_x = x + 0.5
             center_y = y + 0.5
 
