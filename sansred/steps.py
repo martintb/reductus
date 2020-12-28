@@ -1427,19 +1427,46 @@ def monitor_normalize(sansdata, mon0=1e8):
     res.data *= mon0/monitor
     return res
 
-# @module
-# def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans,empty_cell_trans):
-#     '''
-#     Needs to be debugged // annotated
-#     
-#     Should only use module operations!!!
-#     '''
-#     A = subtract(sample_scatt, blocked_scatt, align_by='run.configuration')+
-#     B = subtract(blocked_scatt, empty_cell_scatt, align_by='run.configuration')
-#     C = product(data, sample_trans, align_by="det.des_dis,resolution.lmda,run.guide")
-#     D = divide(data,empty_cell_trans)
-#     COR = subtract(A, D, align_by='run.configuration')
-#     return COR
+@module
+def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans,empty_cell_trans,open_beam_trans):
+    '''
+
+    **Inputs**
+
+    sample_scatt(sans2d[]): sample scattering files
+
+    blocked_scatt(sans2d[]): blocked beam scattering files
+
+    empty_cell_scatt(sans2d[]): empty cell scattering files
+
+    sample_trans(sans2d[]): sample transmission files
+
+    empty_cell_trans(sans2d[]): empty cell transmission files
+    
+    open_beam_trans(sans2d[]): open beam transmission files
+
+    **Returns**
+
+    COR (sans2d[]): background corrected scattering intensity
+
+    Tsam (params[]): Calculated transmission of sample
+
+    Tempty (params[]): Calculated transmission of sample holder
+
+    open_beam_trans_out (sans2d[]): passthrough of 2d open_beam to clean up wireframe
+
+    '''
+    A = subtract(sample_scatt, blocked_scatt, align_by='run.configuration')
+    B = subtract(blocked_scatt, empty_cell_scatt, align_by='run.configuration')
+
+    Tsam = generate_transmission(sample_trans,open_beam_trans,align_by='run.configuration')
+    Tempty = generate_transmission(empty_cell_trans,open_beam_trans,align_by='run.configuration')
+    Tratio = param_ratio(Tsam,Tempty,align_by='resolution.lmda')
+
+    C = product(B, Tratio, align_by='resolution.lmda')
+
+    COR = subtract(A, C, align_by='run.configuration')
+    return COR,Tsam,Tempty,open_beam_trans
 
 @nocache
 @module
