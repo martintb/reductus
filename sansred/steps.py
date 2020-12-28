@@ -68,6 +68,30 @@ def module(action):
 
 @nocache
 @module
+def LoadABS(filelist=None, variance=0.0001):
+    """
+    loads a DIV file (VAX format) into a SansData obj and returns that.
+
+    **Inputs**
+
+    filelist (fileinfo[]): Files to open.
+
+    variance (float): Target variance of DIV measurement (default 0.0001, i.e. 1% error)
+    
+    **Returns**
+
+    output (sansIQ[]): all the entries loaded.
+
+    2018-04-21 Brian Maranville
+    """
+    from .sans_absformat import readNCNRABS
+    output = []
+    for fname in filelist:
+        output.append(readNCNRABS(fname))
+    return output
+
+@nocache
+@module
 def LoadDIV(filelist=None, variance=0.0001):
     """
     loads a DIV file (VAX format) into a SansData obj and returns that.
