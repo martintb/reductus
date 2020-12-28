@@ -1795,20 +1795,21 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
     elif align_by.lower() != "none":
         # make lookup:
         align_lookup2 = {}
-        for f in factor_param2:
-            key = get_compound_key(f.params, align_by)
+        for f2 in factor_param2:
+            key = get_compound_key(f2.params, align_by)
             value =  Uncertainty(
-                f.params.get('factor', 1.0), 
-                f.params.get('factor_variance', 0.0)
+                f2.params.get('factor', 1.0), 
+                f2.params.get('factor_variance', 0.0)
             )
             align_lookup2[key] = value
+
 
         output = []
         for f1 in factor_param1:
             key = get_compound_key(f1.params, align_by)
             f1_U= Uncertainty(f1.params.get('factor', 1.0), f1.params.get('factor_variance', 0.0)) 
             ratio = f1_U/align_lookup2[key]
-            output.append(uncertainty_to_params(ratio,f.params))
+            output.append(uncertainty_to_params(ratio,f1.params))
             
     else:# if align is None, match data by index
         output = []
