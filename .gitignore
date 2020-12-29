@@ -21,3 +21,4 @@ reductus.egg-info/*
 **/files_cache/
 **/cache/
 *swp
+*DS_Store
