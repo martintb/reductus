@@ -704,102 +704,129 @@ def FX(xx,sx3,xcenter,sx):
 
 @nocache
 @module
-def PixelsToQ(data, beam_center=[None,None], correct_solid_angle=True):
+def PixelsToQ(data_list, Tsam_list, beam_center=[None,None], correct_sa=True,correct_wa=True,sort_output=True):
     """
     generate a q_map for sansdata. Each pixel will have 4 values: (qx, qy, q, theta)
 
 
     **Inputs**
 
-    data (sans2d): data in
+    data_list (sans2d[]): data in
+
+    Tsam_list (params[]?): sample transmissions
 
     beam_center {Beam Center Override} (coordinate?): If not blank, will override the beamx and beamy from the datafile.
 
-    correct_solid_angle {Correct solid angle} (bool): Apply correction for mapping
+    correct_sa {Correct solid angle} (bool): Apply correction for mapping
         curved Ewald sphere to flat detector
+
+    correct_wa {Wide angle correction} (bool): Apply correction for
+    varying path through detector
+
+    sort_output (bool): Sort output of module by q (makes 1-D modules easier to use)
 
     **Returns**
 
-    output (sans2d): converted to I vs. Qx, Qy
+    output (sans2d[]): converted to I vs. Qx, Qy
 
     2016-04-17 Brian Maranville
     """
+    if Tsam_list is None:
+        ts_lookup = {}
+    else:
+        ts_lookup = dict([(get_compound_key(ts.params, 'resolution.lmda'), ts) for ts in Tsam_list])
 
-    sampleOffset = data.metadata["sample.position"]
-    Z = data.metadata["det.dis"] + sampleOffset
-    beamx_override, beamy_override = beam_center
-    x0 = beamx_override if beamx_override is not None else data.metadata['det.beamx'] #should be close to 64
-    y0 = beamy_override if beamy_override is not None else data.metadata['det.beamy'] #should be close to 64
-    wavelength = data.metadata['resolution.lmda']
-    q0 = (4*np.pi/wavelength)
-    shape = data.data.x.shape
+    output = []
+    for data in data_list:
+        sampleOffset = data.metadata["sample.position"]
+        Z = data.metadata["det.dis"] + sampleOffset
+        beamx_override, beamy_override = beam_center
+        x0 = beamx_override if beamx_override is not None else data.metadata['det.beamx'] #should be close to 64
+        y0 = beamy_override if beamy_override is not None else data.metadata['det.beamy'] #should be close to 64
+        wavelength = data.metadata['resolution.lmda']
+        q0 = (4*np.pi/wavelength)
+        shape = data.data.x.shape
 
-    x, y = np.indices(shape) + 1.0 # center of first pixel is 1, 1 (Detector indexing)
-    xcenter, ycenter = [(dd + 1.0)/2.0 for dd in shape] # = 64.5 for 128x128 array
-    sx = data.metadata['det.pixelsizex'] # cm
-    sy = data.metadata['det.pixelsizey']
-    sx3 = 1000.0 # constant, = 10000(mm) = 1000 cm; not in the nexus file for some reason.
-    sy3 = 1000.0 # (cm) also not in the nexus file 
-    # centers of pixels:
-    dxbm = sx3*np.tan((x0-xcenter)*sx/sx3)
-    dybm = sy3*np.tan((y0-ycenter)*sy/sy3)
+        x, y = np.indices(shape) + 1.0 # center of first pixel is 1, 1 (Detector indexing)
+        xcenter, ycenter = [(dd + 1.0)/2.0 for dd in shape] # = 64.5 for 128x128 array
+        sx = data.metadata['det.pixelsizex'] # cm
+        sy = data.metadata['det.pixelsizey']
+        sx3 = 1000.0 # constant, = 10000(mm) = 1000 cm; not in the nexus file for some reason.
+        sy3 = 1000.0 # (cm) also not in the nexus file 
+        # centers of pixels:
+        dxbm = sx3*np.tan((x0-xcenter)*sx/sx3)
+        dybm = sy3*np.tan((y0-ycenter)*sy/sy3)
 
-    X = sx3*np.tan((x-xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
-    Y = sy3*np.tan((y-ycenter)*sy/sy3) - dybm
-    r, theta, q, phi, qx, qy, qz = _calculate_Q(X, Y, Z, q0)
-    
-    res = data.copy()
-    if correct_solid_angle:
-        """
-        rad = sqrt(dtdis2 + xd^2 + yd^2)
-		domega = rad/dtdist
-		ratio = domega^3
-		xy = xx[ii]*yy[jj]
+        X = sx3*np.tan((x-xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
+        Y = sy3*np.tan((y-ycenter)*sy/sy3) - dybm
+        r, theta, q, phi, qx, qy, qz = _calculate_Q(X, Y, Z, q0)
+        
+        res = data.copy()
+        res.theta = theta
+        if correct_sa:
+            """
+            rad = sqrt(dtdis2 + xd^2 + yd^2)
+            	domega = rad/dtdist
+            	ratio = domega^3
+            	xy = xx[ii]*yy[jj]
 
-		data[ii][jj] *= xy*ratio
-        """
-        xx = (np.cos((x-xcenter)*sx/sx3))**2
-        yy = (np.cos((y-ycenter)*sy/sy3))**2
-        #data.data.x = data.data.x / (np.cos(theta)**3)
-        res.data.x = res.data.x * xx * yy / (np.cos(2*theta)**3)
+            	data[ii][jj] *= xy*ratio
+            """
+            res,sa_correct = correct_solid_angle(res)
+            # xx = (np.cos((x-xcenter)*sx/sx3))**2
+            # yy = (np.cos((y-ycenter)*sy/sy3))**2
+            # #data.data.x = data.data.x / (np.cos(theta)**3)
+            # res.data.x = res.data.x * xx * yy / (np.cos(2*theta)**3)
 
-    # bin corners:
-    X_low = sx3*np.tan((x - 0.5 - xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
-    X_high = sx3*np.tan((x + 0.5 - xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
-    Y_low  = sy3*np.tan((y - 0.5 - ycenter)*sy/sy3) - dybm
-    Y_high = sy3*np.tan((y + 0.5 - ycenter)*sy/sy3) - dybm
+        if correct_wa:
+            Tsam = ts_lookup.get(get_compound_key(data.metadata,'resolution.lmda'),None)
+            res,wa_correct = correct_wide_angle(res,Tsam)
+            # uval = -1.0*np.log(Tsam)
+            # arg = (1 - np.cos(res.theta))/np.cos(res.theta)
+            # correction = (1 - np.exp(-uval*arg))/(uval*arg)
+            # res.data.x = res.data.x / correction
 
-    r_lo, theta_lo, q_lo, phi_lo, qx_lo, qy_lo, qz_lo = _calculate_Q(X_low, Y_low, Z, q0)
-    r_hi, theta_hi, q_hi, phi_hi, qx_hi, qy_hi, qz_hi = _calculate_Q(X_high, Y_high, Z, q0)
+        # bin corners:
+        X_low = sx3*np.tan((x - 0.5 - xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
+        X_high = sx3*np.tan((x + 0.5 - xcenter)*sx/sx3) - dxbm # in mm in nexus, but converted by loader
+        Y_low  = sy3*np.tan((y - 0.5 - ycenter)*sy/sy3) - dybm
+        Y_high = sy3*np.tan((y + 0.5 - ycenter)*sy/sy3) - dybm
 
-    #Adding res.q
-    res.q = q
-    res.qx = qx
-    res.qy = qy
-    res.qz = qz
-    # bin edges:
-    res.qx_lo = qx_lo
-    res.qy_lo = qy_lo
-    res.qx_hi = qx_hi
-    res.qy_hi = qy_hi
+        r_lo, theta_lo, q_lo, phi_lo, qx_lo, qy_lo, qz_lo = _calculate_Q(X_low, Y_low, Z, q0)
+        r_hi, theta_hi, q_hi, phi_hi, qx_hi, qy_hi, qz_hi = _calculate_Q(X_high, Y_high, Z, q0)
 
-    res.X = X
-    res.Y = Y
-    res.Z = Z
-    res.r = r
-    res.metadata['det.beamx'] = x0
-    res.metadata['det.beamy'] = y0
-    res.qx_min = q0/2.0 * data.metadata['det.pixelsizex']*(0.5 - x0)/ Z
-    res.qy_min = q0/2.0 * data.metadata['det.pixelsizex']*(0.5 - y0)/ Z
-    res.qx_max = q0/2.0 * data.metadata['det.pixelsizex']*(128.5 - x0)/ Z
-    res.qy_max = q0/2.0 * data.metadata['det.pixelsizex']*(128.5 - y0)/ Z
-    res.xlabel = "Qx (inv. Angstroms)"
-    res.ylabel = "Qy (inv. Angstroms)"
-    res.theta = theta
+        #Adding res.q
+        res.q = q
+        res.qx = qx
+        res.qy = qy
+        res.qz = qz
+        # bin edges:
+        res.qx_lo = qx_lo
+        res.qy_lo = qy_lo
+        res.qx_hi = qx_hi
+        res.qy_hi = qy_hi
 
-    calculateDQ(res)
-    calculateMeanQ(res)
-    return res
+        res.X = X
+        res.Y = Y
+        res.Z = Z
+        res.r = r
+        res.metadata['det.beamx'] = x0
+        res.metadata['det.beamy'] = y0
+        res.qx_min = q0/2.0 * data.metadata['det.pixelsizex']*(0.5 - x0)/ Z
+        res.qy_min = q0/2.0 * data.metadata['det.pixelsizex']*(0.5 - y0)/ Z
+        res.qx_max = q0/2.0 * data.metadata['det.pixelsizex']*(128.5 - x0)/ Z
+        res.qy_max = q0/2.0 * data.metadata['det.pixelsizex']*(128.5 - y0)/ Z
+        res.xlabel = "Qx (inv. Angstroms)"
+        res.ylabel = "Qy (inv. Angstroms)"
+        res.theta = theta
+
+        calculateDQ(res)
+        calculateMeanQ(res)
+        output.append(res)
+        
+    if sort_output:
+        output = sorted(output,key=lambda x: np.min(x.q))
+    return output
 
 def mask_action(data=None, mask_indices=None, **kwargs):
     """
