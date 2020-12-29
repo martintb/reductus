@@ -1853,7 +1853,7 @@ def divide(data, factor_param, align_by="resolution.lmda,run.guide"):
     else:# if align is None, match data by index
         return [d / Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0)) for d,f in zip(data, factor_param)]
 
-def correct_solid_angle(sansdata):
+def correct_solid_angle(data):
     """
     Given a SansData with q, qx, qy, and theta images defined,
     correct for the fact that the detector is flat and the Ewald sphere
@@ -1867,12 +1867,14 @@ def correct_solid_angle(sansdata):
 
     output (sans2d): corrected for mapping to Ewald
 
+    correction (sans2d): 2d image of correction
+
     2016-08-03 Brian Maranville
     """
-    if sansdata.theta is None:
+    if data.theta is None:
         raise ValueError("Theta is not defined - convert pixels to Q first (use PixelsToQ module)")
         
-    res = sansdata.copy()
+    res = data.copy()
     
     x, y = np.indices(res.data.x.shape) + 1.0 # center of first pixel is 1, 1 (Detector indexing)
     xcenter, ycenter = [(dd + 1.0)/2.0 for dd in res.data.x.shape] # = 64.5 for 128x128 array
@@ -1882,8 +1884,10 @@ def correct_solid_angle(sansdata):
     sy3 = 1000.0 # (cm) also not in the nexus file 
     xx = np.square(np.cos((x-xcenter)*sx/sx3))
     yy = np.square(np.cos((y-ycenter)*sy/sy3))
-    res.data.x = res.data.x * xx * yy / (np.cos(2*res.theta)**3)
-    return res
+    correction = xx * yy / (np.cos(2*res.theta)**3)
+    correction = SansData(correction,metadata=res.metadata)
+    res.data.x = res.data.x * correction.data.x
+    return res,correction
 
 @nocache
 @module
