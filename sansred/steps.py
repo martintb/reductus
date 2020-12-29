@@ -836,7 +836,7 @@ def join_sansIQ(data):
 
 @nocache
 @module
-def mask_points(data, mask_indices=None):
+def mask_points(data, mask_lo=None,mask_hi=None):
     """
     Identify and mask out user-specified points.
 
@@ -849,18 +849,26 @@ def mask_points(data, mask_indices=None):
 
     data (sansIQ) : background data which may contain specular point
 
-    mask_indices (index[]*) : 0-origin data point indices to mask. For example,
-    *mask_indices=[1,4,6]* masks the 2nd, 5th and 7th point respectively. Each
-    dataset should have its own mask.
+    mask_lo (int*): if set, mask all points below this index. Each dataset
+    should have its own value
+
+    mask_hi (int*): if set, mask this many points from end of dataset. Each
+    dataset should have its own value
 
     **Returns**
 
     output (sansIQ) : masked data
 
-    | 2018-04-30 Brian Maranville
-    | 2019-07-02 Brian Maranville: change self.points after mask
+    | 2020-12-30 Tyler Martin
     """
     data = copy(data)
+    mask_indices = []
+    if mask_lo:
+        for j in range(mask_lo):
+            mask_indices.append(j)
+    if mask_hi:
+        for j in range(mask_hi):
+            mask_indices.append(len(data.Q)-j)
     output = mask_action(data=data, mask_indices=mask_indices)
     return output
 
@@ -923,8 +931,14 @@ def shiftIQ(data,shift_data=True,shift_coeffs=None,shift_to=None):
 
     shift_output = []
     for d,s in zip(data,shift_coeffs):
-        od = OrderedDict([("factor", s), ("factor_variance", 0.0), ("factor_err", 0.0),('label',d.label)])
-        od.update(**d.metadata)
+        od = OrderedDict([
+            ("factor", s), 
+            ("factor_variance", 0.0), 
+            ("factor_err", 0.0),
+            ('sample.description',d.metadata['sample.description']),
+            ('resolution.lmda',d.metadata['resolution.lmda']),
+            ('det.des_dis',d.metadata['det.des_dis']),
+            ])
         shift_output.append( Parameters(od))
     return data,shift_output
 
