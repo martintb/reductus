@@ -1186,7 +1186,7 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
 
     canonical_output = SansIQData(I, np.sqrt(I_var), Q, Q_mean_error, Q_mean, ShadowFactor, metadata=deepcopy(data.metadata))
     
-    return nominal_output, mean_output, canonical_output
+    return canonical_output
 
 @nocache
 @module
