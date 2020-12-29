@@ -1470,7 +1470,7 @@ def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans
 
 @nocache
 @module
-def wide_angle_correction(sansdata,trans):
+def correct_wide_angle(sansdata,trans):
     '''
     Wide angle transmission correction (see WorkFileUtils.ipf)
     
@@ -1478,7 +1478,7 @@ def wide_angle_correction(sansdata,trans):
 
     sansdata (sans2d): measurement with sample in the beam
     
-    trans (params[]?): transmission to use in correction
+    trans (params?): transmission to use in correction
     
     **Returns**
     
@@ -1487,8 +1487,6 @@ def wide_angle_correction(sansdata,trans):
     correction (sans2d): correction image for each pixel
     '''
     
-    #sansdata = sansdata[0]
-    trans = trans[0]
     if sansdata.theta is None:
         raise ValueError("Theta is not defined - convert pixels to Q first (use PixelsToQ module)")
         
@@ -1500,16 +1498,18 @@ def wide_angle_correction(sansdata,trans):
     res = sansdata.copy()
     
     uval = -1.0*np.log(trans)
-    arg = (1 - np.cos(res.theta))/np.cos(res.theta)
-    correction = (1 - np.exp(-uval*arg))/(uval*arg)
+    cos_th = np.cos(res.theta)
+    arg = (1.0-cos_th)/cos_th
+
+    if uval<0.01:
+        correction= 1-0.5*uval*arg
+    else:
+        correction1= 1-0.5*uval*arg
+        correction2 = (1 - np.exp(-uval*arg))/(uval*arg)
+        correction = np.where(cos_th>0.99,correction1,correction2)
+
     correction = SansData(correction,metadata=res.metadata)
-    
-    # print('WAC:',sansdata.metadata['sample.labl'],)
-    # print('resdata.x[64,-5:]',res.data.x[64,-5:])
-    # print('correction.data.x[64,-5:]',correction.data.x[64,-5:])
     res.data.x /= correction.data.x
-    # print('resdata.x[64,-5:]',res.data.x[64,-5:])
-    
     
     return res,correction
 
