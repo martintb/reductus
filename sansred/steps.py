@@ -1078,17 +1078,13 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
 
     q_step (float): step size for Q bins (defaults to minimum qx step)
 
-    mask_data (sans2d): mask file loaded from disk
+    mask_data (sans2d?): mask file loaded from disk
 
     dQ_method (opt:none|IGOR|statistical) : method for calculating dQ
 
     **Returns**
 
-    nominal_output (sans1d): converted to I vs. nominal Q
-
-    mean_output (sans1d): converted to I vs. mean Q within integrated region
-
-    output (sansIQ): canonical I vs Q output for sans data.
+    output (sansIQ): I vs Q output for sans data.
 
     | 2019-01-01 Brian Maranville
     | 2019-09-05 Adding mask_width as a temporary way to handle basic masking
