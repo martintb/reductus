@@ -1,0 +1,528 @@
+{
+  "modules": [
+    {
+      "x": 5,
+      "module": "ncnr.sans.SuperLoadSANS",
+      "config": {
+        "filelist": [],
+        "do_mon_norm": true,
+        "do_solid_angle_correct": false
+      },
+      "y": 5,
+      "title": "Sample Scattering"
+    },
+    {
+      "x": 5,
+      "module": "ncnr.sans.SuperLoadSANS",
+      "config": {
+        "filelist": [],
+        "do_deadtime": true,
+        "do_atten_correct": true,
+        "do_mon_norm": true,
+        "check_timestamps": true,
+        "do_det_eff": true,
+        "do_solid_angle_correct": false
+      },
+      "y": 65,
+      "title": "Empty Cell Scattering"
+    },
+    {
+      "x": 5,
+      "module": "ncnr.sans.SuperLoadSANS",
+      "config": {
+        "filelist": [],
+        "do_atten_correct": true,
+        "do_mon_norm": false,
+        "do_deadtime": true,
+        "do_det_eff": true,
+        "check_timestamps": true,
+        "do_solid_angle_correct": false
+      },
+      "y": 135,
+      "title": "Empty Cell Flux"
+    },
+    {
+      "x": 5,
+      "module": "ncnr.sans.SuperLoadSANS",
+      "config": {
+        "filelist": [],
+        "do_atten_correct": true,
+        "do_mon_norm": false,
+        "do_solid_angle_correct": false
+      },
+      "y": 105,
+      "title": "Sample Flux"
+    },
+    {
+      "x": 5,
+      "module": "ncnr.sans.SuperLoadSANS",
+      "config": {
+        "filelist": [],
+        "do_solid_angle_correct": false
+      },
+      "y": 35,
+      "title": "Blocked Beam Scattering"
+    },
+    {
+      "x": 5,
+      "module": "ncnr.sans.SuperLoadSANS",
+      "config": {
+        "filelist": [],
+        "do_atten_correct": true,
+        "do_mon_norm": false,
+        "check_timestamps": true,
+        "do_deadtime": true,
+        "do_det_eff": true,
+        "do_solid_angle_correct": false
+      },
+      "title": "Open Beam Flux",
+      "y": 165
+    },
+    {
+      "x": 490,
+      "module": "ncnr.sans.absolute_scaling",
+      "y": 155,
+      "title": "Absolute Scale",
+      "config": {
+        "auto_box": true,
+        "integration_box": [
+          57,
+          71,
+          56,
+          68
+        ],
+        "instrument": "NGB"
+      }
+    },
+    {
+      "module": "ncnr.sans.LoadDIV",
+      "title": "Sensitivity File",
+      "x": 290,
+      "y": 140,
+      "config": {
+        "filelist": []
+      }
+    },
+    {
+      "module": "ncnr.sans.PixelsToQ",
+      "title": "Pixels To Q",
+      "x": 695,
+      "y": 15
+    },
+    {
+      "module": "ncnr.sans.circular_av_new",
+      "title": "Azimuthal Avg",
+      "x": 840,
+      "y": 15
+    },
+    {
+      "module": "ncnr.sans.subtract_background",
+      "title": "Subtract Background",
+      "x": 250,
+      "y": 5
+    },
+    {
+      "module": "ncnr.sans.shiftIQ",
+      "title": "Shift",
+      "x": 1155,
+      "y": 15
+    },
+    {
+      "module": "ncnr.sans.join_sansIQ",
+      "title": "Join Arbitrary Scale",
+      "x": 1305,
+      "y": 15
+    },
+    {
+      "module": "ncnr.sans.PixelsToQ",
+      "title": "Pixels to Q",
+      "x": 690,
+      "y": 105
+    },
+    {
+      "module": "ncnr.sans.circular_av_new",
+      "title": "Azimuthal Avg",
+      "x": 845,
+      "y": 105
+    },
+    {
+      "module": "ncnr.sans.shiftIQ",
+      "title": "Shift",
+      "x": 1160,
+      "y": 105
+    },
+    {
+      "module": "ncnr.sans.join_sansIQ",
+      "title": "Join Absolute Scale",
+      "x": 1295,
+      "y": 105
+    },
+    {
+      "module": "ncnr.sans.LoadMASK",
+      "title": "Mask File",
+      "x": 690,
+      "y": 170,
+      "config": {
+        "filelist": []
+      }
+    },
+    {
+      "module": "ncnr.sans.mask_points",
+      "title": "Trim",
+      "x": 1010,
+      "y": 15,
+      "config": {
+        "mask_lo": [
+          6,
+          6,
+          13
+        ],
+        "mask_hi": [
+          15,
+          15,
+          15
+        ]
+      }
+    },
+    {
+      "module": "ncnr.sans.mask_points",
+      "title": "Trim",
+      "x": 1015,
+      "y": 105,
+      "config": {
+        "mask_indices": [
+          [
+            0,
+            1,
+            10,
+            11,
+            12,
+            146,
+            147,
+            148,
+            149,
+            150,
+            151,
+            152,
+            153,
+            154,
+            155,
+            156,
+            157,
+            158,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          [
+            0,
+            1,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87
+          ]
+        ],
+        "mask_lo": [
+          6,
+          6,
+          13
+        ],
+        "mask_hi": [
+          15,
+          15,
+          15
+        ]
+      }
+    }
+  ],
+  "wires": [
+    {
+      "source": [
+        7,
+        "output"
+      ],
+      "target": [
+        6,
+        "div"
+      ]
+    },
+    {
+      "source": [
+        8,
+        "output"
+      ],
+      "target": [
+        9,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        0,
+        "output"
+      ],
+      "target": [
+        10,
+        "sample_scatt"
+      ]
+    },
+    {
+      "source": [
+        4,
+        "output"
+      ],
+      "target": [
+        10,
+        "blocked_scatt"
+      ]
+    },
+    {
+      "source": [
+        1,
+        "output"
+      ],
+      "target": [
+        10,
+        "empty_cell_scatt"
+      ]
+    },
+    {
+      "source": [
+        2,
+        "output"
+      ],
+      "target": [
+        10,
+        "empty_cell_trans"
+      ]
+    },
+    {
+      "source": [
+        10,
+        "COR"
+      ],
+      "target": [
+        6,
+        "sample_list"
+      ]
+    },
+    {
+      "source": [
+        13,
+        "output"
+      ],
+      "target": [
+        14,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        15,
+        "output"
+      ],
+      "target": [
+        16,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        17,
+        "output"
+      ],
+      "target": [
+        9,
+        "mask_data"
+      ]
+    },
+    {
+      "source": [
+        17,
+        "output"
+      ],
+      "target": [
+        14,
+        "mask_data"
+      ]
+    },
+    {
+      "source": [
+        3,
+        "output"
+      ],
+      "target": [
+        10,
+        "sample_trans"
+      ]
+    },
+    {
+      "source": [
+        5,
+        "output"
+      ],
+      "target": [
+        10,
+        "open_beam_trans"
+      ]
+    },
+    {
+      "source": [
+        10,
+        "COR"
+      ],
+      "target": [
+        8,
+        "data_list"
+      ]
+    },
+    {
+      "source": [
+        6,
+        "abs"
+      ],
+      "target": [
+        13,
+        "data_list"
+      ]
+    },
+    {
+      "source": [
+        10,
+        "Tsam"
+      ],
+      "target": [
+        8,
+        "Tsam_list"
+      ]
+    },
+    {
+      "source": [
+        10,
+        "open_beam_trans_out"
+      ],
+      "target": [
+        6,
+        "empty_list"
+      ]
+    },
+    {
+      "source": [
+        10,
+        "Tsam"
+      ],
+      "target": [
+        6,
+        "Tsam_list"
+      ]
+    },
+    {
+      "source": [
+        14,
+        "output"
+      ],
+      "target": [
+        19,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        19,
+        "output"
+      ],
+      "target": [
+        15,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        9,
+        "output"
+      ],
+      "target": [
+        18,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        18,
+        "output"
+      ],
+      "target": [
+        11,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        11,
+        "output"
+      ],
+      "target": [
+        12,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        10,
+        "Tsam"
+      ],
+      "target": [
+        13,
+        "Tsam_list"
+      ]
+    }
+  ]
+}
