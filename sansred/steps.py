@@ -1963,7 +1963,7 @@ def correct_attenuation(sample, instrument="NG7"):
 
 @nocache
 @module
-def absolute_scaling(empty_list, sample_list, Tsam_list, div, instrument="NG7", integration_box=[55, 74, 53, 72], auto_box=True, margin=5,align_by="resolution.lmda,run.guide"):
+def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NG7", integration_box=[55, 74, 53, 72], auto_box=True, margin=5,align_by="resolution.lmda,run.guide"):
     """
     Calculate absolute scaling
 
@@ -1971,9 +1971,9 @@ def absolute_scaling(empty_list, sample_list, Tsam_list, div, instrument="NG7", 
 
     **Inputs**
 
-    empty_list (sans2d[]): measurement with no sample in the beam
-
     sample_list (sans2d[]): measurement with sample in the beam
+
+    empty_list (sans2d[]): measurement with no sample in the beam
 
     Tsam_list (params[]): sample transmission
 
