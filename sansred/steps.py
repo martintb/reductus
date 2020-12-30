@@ -2649,7 +2649,7 @@ def ApplyCorrections(data,
     '''
     
     if do_solid_angle_correct or do_pixels_to_q:
-        data = [PixelsToQ(d,correct_solid_angle=do_solid_angle_correct) for d in data]
+        data = [PixelsToQ(d,correct_sa=do_solid_angle_correct,correct_wa=False) for d in data]
     if do_det_eff:
         data = [correct_detector_efficiency(d) for d in data]
     if do_deadtime:
