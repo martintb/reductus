@@ -1562,10 +1562,10 @@ def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans
 
     '''
     A = subtract(sample_scatt, blocked_scatt, align_by='run.configuration')
-    B = subtract(blocked_scatt, empty_cell_scatt, align_by='run.configuration')
+    B = subtract(empty_cell_scatt, blocked_scatt, align_by='run.configuration')
 
-    Tsam = generate_transmission(sample_trans,open_beam_trans,align_by='run.configuration')
-    Tempty = generate_transmission(empty_cell_trans,open_beam_trans,align_by='run.configuration')
+    Tsam = generate_transmission(sample_trans,open_beam_trans,auto_integrate=True,align_by='run.configuration')
+    Tempty = generate_transmission(empty_cell_trans,open_beam_trans,auto_integrate=True,align_by='run.configuration')
     Tratio = param_ratio(Tsam,Tempty,align_by='resolution.lmda')
 
     C = product(B, Tratio, align_by='resolution.lmda')
