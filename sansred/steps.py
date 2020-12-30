@@ -849,6 +849,8 @@ def PixelsToQ(data_list, Tsam_list, beam_center=[None,None], correct_sa=True,cor
         if correct_wa:
             Tsam = ts_lookup.get(get_compound_key(data.metadata,'resolution.lmda'),None)
             res,wa_correct = correct_wide_angle(res,Tsam)
+            # Tsam = ts_lookup.get(get_compound_key(data.metadata,'resolution.lmda'),None)
+            # print(data.metadata['resolution.lmda'],data.metadata['det.des_dis'],Tsam)
             # uval = -1.0*np.log(Tsam)
             # arg = (1 - np.cos(res.theta))/np.cos(res.theta)
             # correction = (1 - np.exp(-uval*arg))/(uval*arg)
@@ -1279,15 +1281,15 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
         # 'none' is the default
         Q_mean_error = np.zeros_like(Q)
 
-    nominal_output = Sans1dData(Q, I, dx=Q_mean_error, dv=I_var, xlabel="Q", vlabel="I",
-                        xunits="inv. A", vunits="neutrons")
-    nominal_output.metadata = deepcopy(data.metadata)
-    nominal_output.metadata['extra_label'] = "_circ"
+    # nominal_output = Sans1dData(Q, I, dx=Q_mean_error, dv=I_var, xlabel="Q", vlabel="I",
+    #                     xunits="inv. A", vunits="neutrons")
+    # nominal_output.metadata = deepcopy(data.metadata)
+    # nominal_output.metadata['extra_label'] = "_circ"
 
-    mean_output = Sans1dData(Q_mean, I, dx=Q_mean_error, dv=I_var, xlabel="Q", vlabel="I",
-                        xunits="inv. A", vunits="neutrons")
-    mean_output.metadata = deepcopy(data.metadata)
-    mean_output.metadata['extra_label'] = "_circ"
+    # mean_output = Sans1dData(Q_mean, I, dx=Q_mean_error, dv=I_var, xlabel="Q", vlabel="I",
+    #                     xunits="inv. A", vunits="neutrons")
+    # mean_output.metadata = deepcopy(data.metadata)
+    # mean_output.metadata['extra_label'] = "_circ"
 
     canonical_output = SansIQData(I, np.sqrt(I_var), Q, Q_mean_error, Q_mean, ShadowFactor, metadata=deepcopy(data.metadata))
     
