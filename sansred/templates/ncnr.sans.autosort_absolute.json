@@ -1,0 +1,353 @@
+{
+  "modules": [
+    {
+      "x": 505,
+      "module": "ncnr.sans.absolute_scaling",
+      "y": 5,
+      "title": "Absolute Scale",
+      "config": {
+        "auto_box": true,
+        "integration_box": [
+          57,
+          72,
+          54,
+          70
+        ],
+        "instrument": "NGB",
+        "margin": 3,
+        "align_by": "det.det_dis,resolution.lmda"
+      }
+    },
+    {
+      "module": "ncnr.sans.LoadDIV",
+      "title": "Sensitivity File",
+      "x": 300,
+      "y": 135,
+      "config": {
+        "filelist": []
+      }
+    },
+    {
+      "module": "ncnr.sans.subtract_background",
+      "title": "Subtract Background",
+      "x": 250,
+      "y": 5
+    },
+    {
+      "module": "ncnr.sans.PixelsToQ",
+      "title": "Pixels to Q",
+      "x": 685,
+      "y": 35,
+      "config": {
+        "correct_wa": true,
+        "correct_sa": true
+      }
+    },
+    {
+      "module": "ncnr.sans.circular_av_new",
+      "title": "Azimuthal Avg",
+      "x": 820,
+      "y": 35
+    },
+    {
+      "module": "ncnr.sans.shiftIQ",
+      "title": "Shift",
+      "x": 1110,
+      "y": 35
+    },
+    {
+      "module": "ncnr.sans.join_sansIQ",
+      "title": "Join Configurations",
+      "x": 1240,
+      "y": 35
+    },
+    {
+      "module": "ncnr.sans.LoadMASK",
+      "title": "Mask File",
+      "x": 665,
+      "y": 100,
+      "config": {
+        "filelist": []
+      }
+    },
+    {
+      "module": "ncnr.sans.mask_points",
+      "title": "Trim",
+      "x": 980,
+      "y": 35,
+      "config": {
+        "mask_indices": [
+          [
+            0,
+            1,
+            10,
+            11,
+            12,
+            146,
+            147,
+            148,
+            149,
+            150,
+            151,
+            152,
+            153,
+            154,
+            155,
+            156,
+            157,
+            158,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          [
+            0,
+            1,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            71,
+            72,
+            73,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87
+          ],
+          [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            74,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+            82,
+            83,
+            84,
+            85,
+            86,
+            87
+          ]
+        ],
+        "mask_lo": [
+          6,
+          6,
+          13
+        ],
+        "mask_hi": [
+          15,
+          15,
+          15
+        ]
+      }
+    },
+    {
+      "module": "ncnr.sans.autosort_new",
+      "title": "Choose Files",
+      "x": 5,
+      "y": 5,
+      "config": {
+        "filelist": []
+      }
+    }
+  ],
+  "wires": [
+    {
+      "source": [
+        1,
+        "output"
+      ],
+      "target": [
+        0,
+        "div"
+      ]
+    },
+    {
+      "source": [
+        2,
+        "COR"
+      ],
+      "target": [
+        0,
+        "sample_list"
+      ]
+    },
+    {
+      "source": [
+        3,
+        "output"
+      ],
+      "target": [
+        4,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        5,
+        "output"
+      ],
+      "target": [
+        6,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        7,
+        "output"
+      ],
+      "target": [
+        4,
+        "mask_data"
+      ]
+    },
+    {
+      "source": [
+        0,
+        "abs"
+      ],
+      "target": [
+        3,
+        "data_list"
+      ]
+    },
+    {
+      "source": [
+        2,
+        "open_beam_trans_out"
+      ],
+      "target": [
+        0,
+        "empty_list"
+      ]
+    },
+    {
+      "source": [
+        2,
+        "Tsam"
+      ],
+      "target": [
+        0,
+        "Tsam_list"
+      ]
+    },
+    {
+      "source": [
+        4,
+        "output"
+      ],
+      "target": [
+        8,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        8,
+        "output"
+      ],
+      "target": [
+        5,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        9,
+        "sample_scatt"
+      ],
+      "target": [
+        2,
+        "sample_scatt"
+      ]
+    },
+    {
+      "source": [
+        9,
+        "blocked_beam"
+      ],
+      "target": [
+        2,
+        "blocked_scatt"
+      ]
+    },
+    {
+      "source": [
+        9,
+        "empty_scatt"
+      ],
+      "target": [
+        2,
+        "empty_cell_scatt"
+      ]
+    },
+    {
+      "source": [
+        9,
+        "sample_trans"
+      ],
+      "target": [
+        2,
+        "sample_trans"
+      ]
+    },
+    {
+      "source": [
+        9,
+        "empty_trans"
+      ],
+      "target": [
+        2,
+        "empty_cell_trans"
+      ]
+    },
+    {
+      "source": [
+        9,
+        "open_trans"
+      ],
+      "target": [
+        2,
+        "open_beam_trans"
+      ]
+    },
+    {
+      "source": [
+        2,
+        "Tsam"
+      ],
+      "target": [
+        3,
+        "Tsam_list"
+      ]
+    }
+  ]
+}

@@ -6,7 +6,8 @@
       "config": {
         "filelist": [],
         "do_mon_norm": true,
-        "do_solid_angle_correct": false
+        "do_solid_angle_correct": false,
+        "do_atten_correct": false
       },
       "y": 5,
       "title": "Sample Scattering"
@@ -17,7 +18,7 @@
       "config": {
         "filelist": [],
         "do_deadtime": true,
-        "do_atten_correct": true,
+        "do_atten_correct": false,
         "do_mon_norm": true,
         "check_timestamps": true,
         "do_det_eff": true,
@@ -31,14 +32,14 @@
       "module": "ncnr.sans.SuperLoadSANS",
       "config": {
         "filelist": [],
-        "do_atten_correct": true,
+        "do_atten_correct": false,
         "do_mon_norm": false,
         "do_deadtime": true,
         "do_det_eff": true,
         "check_timestamps": true,
         "do_solid_angle_correct": false
       },
-      "y": 135,
+      "y": 125,
       "title": "Empty Cell Flux"
     },
     {
@@ -46,11 +47,11 @@
       "module": "ncnr.sans.SuperLoadSANS",
       "config": {
         "filelist": [],
-        "do_atten_correct": true,
+        "do_atten_correct": false,
         "do_mon_norm": false,
         "do_solid_angle_correct": false
       },
-      "y": 105,
+      "y": 95,
       "title": "Sample Flux"
     },
     {
@@ -58,7 +59,8 @@
       "module": "ncnr.sans.SuperLoadSANS",
       "config": {
         "filelist": [],
-        "do_solid_angle_correct": false
+        "do_solid_angle_correct": false,
+        "do_atten_correct": false
       },
       "y": 35,
       "title": "Blocked Beam Scattering"
@@ -68,7 +70,7 @@
       "module": "ncnr.sans.SuperLoadSANS",
       "config": {
         "filelist": [],
-        "do_atten_correct": true,
+        "do_atten_correct": false,
         "do_mon_norm": false,
         "check_timestamps": true,
         "do_deadtime": true,
@@ -76,44 +78,34 @@
         "do_solid_angle_correct": false
       },
       "title": "Open Beam Flux",
-      "y": 165
+      "y": 155
     },
     {
-      "x": 490,
+      "x": 505,
       "module": "ncnr.sans.absolute_scaling",
-      "y": 155,
+      "y": 5,
       "title": "Absolute Scale",
       "config": {
         "auto_box": true,
         "integration_box": [
           57,
-          71,
-          56,
-          68
+          72,
+          54,
+          70
         ],
-        "instrument": "NGB"
+        "instrument": "NGB",
+        "margin": 3,
+        "align_by": "det.det_dis,resolution.lmda"
       }
     },
     {
       "module": "ncnr.sans.LoadDIV",
       "title": "Sensitivity File",
-      "x": 290,
-      "y": 140,
+      "x": 300,
+      "y": 135,
       "config": {
         "filelist": []
       }
-    },
-    {
-      "module": "ncnr.sans.PixelsToQ",
-      "title": "Pixels To Q",
-      "x": 695,
-      "y": 15
-    },
-    {
-      "module": "ncnr.sans.circular_av_new",
-      "title": "Azimuthal Avg",
-      "x": 840,
-      "y": 15
     },
     {
       "module": "ncnr.sans.subtract_background",
@@ -122,46 +114,38 @@
       "y": 5
     },
     {
-      "module": "ncnr.sans.shiftIQ",
-      "title": "Shift",
-      "x": 1155,
-      "y": 15
-    },
-    {
-      "module": "ncnr.sans.join_sansIQ",
-      "title": "Join Arbitrary Scale",
-      "x": 1305,
-      "y": 15
-    },
-    {
       "module": "ncnr.sans.PixelsToQ",
       "title": "Pixels to Q",
-      "x": 690,
-      "y": 105
+      "x": 685,
+      "y": 35,
+      "config": {
+        "correct_wa": true,
+        "correct_sa": true
+      }
     },
     {
       "module": "ncnr.sans.circular_av_new",
       "title": "Azimuthal Avg",
-      "x": 845,
-      "y": 105
+      "x": 820,
+      "y": 35
     },
     {
       "module": "ncnr.sans.shiftIQ",
       "title": "Shift",
-      "x": 1160,
-      "y": 105
+      "x": 1110,
+      "y": 35
     },
     {
       "module": "ncnr.sans.join_sansIQ",
-      "title": "Join Absolute Scale",
-      "x": 1295,
-      "y": 105
+      "title": "Join Configurations",
+      "x": 1240,
+      "y": 35
     },
     {
       "module": "ncnr.sans.LoadMASK",
       "title": "Mask File",
-      "x": 690,
-      "y": 170,
+      "x": 665,
+      "y": 100,
       "config": {
         "filelist": []
       }
@@ -169,26 +153,8 @@
     {
       "module": "ncnr.sans.mask_points",
       "title": "Trim",
-      "x": 1010,
-      "y": 15,
-      "config": {
-        "mask_lo": [
-          6,
-          6,
-          13
-        ],
-        "mask_hi": [
-          15,
-          15,
-          15
-        ]
-      }
-    },
-    {
-      "module": "ncnr.sans.mask_points",
-      "title": "Trim",
-      "x": 1015,
-      "y": 105,
+      "x": 980,
+      "y": 35,
       "config": {
         "mask_indices": [
           [
@@ -296,21 +262,11 @@
     },
     {
       "source": [
-        8,
-        "output"
-      ],
-      "target": [
-        9,
-        "data"
-      ]
-    },
-    {
-      "source": [
         0,
         "output"
       ],
       "target": [
-        10,
+        8,
         "sample_scatt"
       ]
     },
@@ -320,7 +276,7 @@
         "output"
       ],
       "target": [
-        10,
+        8,
         "blocked_scatt"
       ]
     },
@@ -330,7 +286,7 @@
         "output"
       ],
       "target": [
-        10,
+        8,
         "empty_cell_scatt"
       ]
     },
@@ -340,13 +296,13 @@
         "output"
       ],
       "target": [
-        10,
+        8,
         "empty_cell_trans"
       ]
     },
     {
       "source": [
-        10,
+        8,
         "COR"
       ],
       "target": [
@@ -356,151 +312,11 @@
     },
     {
       "source": [
-        13,
-        "output"
-      ],
-      "target": [
-        14,
-        "data"
-      ]
-    },
-    {
-      "source": [
-        15,
-        "output"
-      ],
-      "target": [
-        16,
-        "data"
-      ]
-    },
-    {
-      "source": [
-        17,
-        "output"
-      ],
-      "target": [
-        9,
-        "mask_data"
-      ]
-    },
-    {
-      "source": [
-        17,
-        "output"
-      ],
-      "target": [
-        14,
-        "mask_data"
-      ]
-    },
-    {
-      "source": [
-        3,
-        "output"
-      ],
-      "target": [
-        10,
-        "sample_trans"
-      ]
-    },
-    {
-      "source": [
-        5,
-        "output"
-      ],
-      "target": [
-        10,
-        "open_beam_trans"
-      ]
-    },
-    {
-      "source": [
-        10,
-        "COR"
-      ],
-      "target": [
-        8,
-        "data_list"
-      ]
-    },
-    {
-      "source": [
-        6,
-        "abs"
-      ],
-      "target": [
-        13,
-        "data_list"
-      ]
-    },
-    {
-      "source": [
-        10,
-        "Tsam"
-      ],
-      "target": [
-        8,
-        "Tsam_list"
-      ]
-    },
-    {
-      "source": [
-        10,
-        "open_beam_trans_out"
-      ],
-      "target": [
-        6,
-        "empty_list"
-      ]
-    },
-    {
-      "source": [
-        10,
-        "Tsam"
-      ],
-      "target": [
-        6,
-        "Tsam_list"
-      ]
-    },
-    {
-      "source": [
-        14,
-        "output"
-      ],
-      "target": [
-        19,
-        "data"
-      ]
-    },
-    {
-      "source": [
-        19,
-        "output"
-      ],
-      "target": [
-        15,
-        "data"
-      ]
-    },
-    {
-      "source": [
         9,
         "output"
       ],
       "target": [
-        18,
-        "data"
-      ]
-    },
-    {
-      "source": [
-        18,
-        "output"
-      ],
-      "target": [
-        11,
+        10,
         "data"
       ]
     },
@@ -516,11 +332,91 @@
     },
     {
       "source": [
+        13,
+        "output"
+      ],
+      "target": [
         10,
+        "mask_data"
+      ]
+    },
+    {
+      "source": [
+        3,
+        "output"
+      ],
+      "target": [
+        8,
+        "sample_trans"
+      ]
+    },
+    {
+      "source": [
+        5,
+        "output"
+      ],
+      "target": [
+        8,
+        "open_beam_trans"
+      ]
+    },
+    {
+      "source": [
+        6,
+        "abs"
+      ],
+      "target": [
+        9,
+        "data_list"
+      ]
+    },
+    {
+      "source": [
+        8,
+        "open_beam_trans_out"
+      ],
+      "target": [
+        6,
+        "empty_list"
+      ]
+    },
+    {
+      "source": [
+        8,
         "Tsam"
       ],
       "target": [
-        13,
+        6,
+        "Tsam_list"
+      ]
+    },
+    {
+      "source": [
+        10,
+        "output"
+      ],
+      "target": [
+        14,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        14,
+        "output"
+      ],
+      "target": [
+        11,
+        "data"
+      ]
+    },
+    {
+      "source": [
+        8,
+        "Tsam"
+      ],
+      "target": [
+        9,
         "Tsam_list"
       ]
     }
