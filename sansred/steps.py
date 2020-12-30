@@ -282,7 +282,6 @@ def autosort(rawdata, subsort="det.des_dis", add_scattering=True):
     sample_trans = []
     empty_trans = []
 
-    print(rawdata)
 
     for r in rawdata:
         purpose = _s(r.metadata['analysis.filepurpose'])
@@ -315,6 +314,75 @@ def autosort(rawdata, subsort="det.des_dis", add_scattering=True):
         sample_scatt = list(added_samples.values())
 
     return sample_scatt, blocked_beam, empty_scatt, sample_trans, empty_trans
+
+@nocache
+@module
+def autosort_new(filelist=None):
+    """
+    redirects a batch of files to different outputs based on metadata in the files
+
+    **Inputs**
+
+    filelist (fileinfo[]): Files to open.
+
+    **Returns**
+
+    sample_scatt (sans2d[]): Sample Scattering
+
+    blocked_beam (sans2d[]): Blocked Beam
+
+    empty_scatt (sans2d[]): Empty Cell Scattering
+
+    sample_trans (sans2d[]): Sample Transmission
+
+    empty_trans (sans2d[]): Empty Cell Transmission
+
+    open_trans (sans2d[]): Open Beam Transmission
+
+    | 2019-07-24 Brian Maranville
+    | 2020-12-30 Tyler Martin
+    """
+    sample_scatt = []
+    sample_trans = []
+    blocked_scatt = []
+    empty_scatt = []
+    empty_trans = []
+    open_trans = []
+    for f in filelist:
+        sansdata = SuperLoadSANS(filelist=[f], 
+                                 do_pixels_to_q=False, 
+                                 do_solid_angle_correct=False, 
+                                 do_det_eff=True, 
+                                 do_deadtime=True,
+                                 do_mon_norm=False, 
+                                 do_atten_correct=False, 
+                                 check_timestamps=True)[0]
+        label = _s(sansdata.metadata['sample.description']).lower()
+        if sansdata.metadata['det.bstopx']<-14:
+            #transmission
+            if 'empty' in label:
+                empty_trans.append(sansdata)
+            elif 'open' in label:
+                open_trans.append(sansdata)
+            else:
+                sample_trans.append(sansdata)
+        else:
+            sansdata = monitor_normalize(sansdata)
+            #scattering
+            if 'blocked' in label:
+                blocked_scatt.append(sansdata)
+            elif 'empty' in label:
+                empty_scatt.append(sansdata)
+            else:
+                sample_scatt.append(sansdata)
+
+    def keyFunc(l):
+        return l.metadata.get('det.des_dis', 0), l.metadata.get('resolution.lmda', 0),
+
+    for output in [sample_scatt, blocked_scatt, empty_scatt, sample_trans, empty_trans]:
+        output.sort(key=keyFunc)
+    
+    return sample_scatt, blocked_scatt, empty_scatt, sample_trans, empty_trans, open_trans
 
 
 @nocache
