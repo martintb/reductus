@@ -1573,50 +1573,6 @@ def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans
     COR = subtract(A, C, align_by='run.configuration')
     return COR,Tsam,Tempty,open_beam_trans
 
-@nocache
-@module
-def correct_wide_angle(sansdata,trans):
-    '''
-    Wide angle transmission correction (see WorkFileUtils.ipf)
-    
-    **Inputs**
-
-    sansdata (sans2d): measurement with sample in the beam
-    
-    trans (params?): transmission to use in correction
-    
-    **Returns**
-    
-    output (sans2d): corrected for wide_angle
-    
-    correction (sans2d): correction image for each pixel
-    '''
-    
-    if sansdata.theta is None:
-        raise ValueError("Theta is not defined - convert pixels to Q first (use PixelsToQ module)")
-        
-    if trans is None:
-        trans = 1.0
-    else:
-        trans = trans.params['factor']
-    
-    res = sansdata.copy()
-    
-    uval = -1.0*np.log(trans)
-    cos_th = np.cos(res.theta)
-    arg = (1.0-cos_th)/cos_th
-
-    if uval<0.01:
-        correction= 1-0.5*uval*arg
-    else:
-        correction1= 1-0.5*uval*arg
-        correction2 = (1 - np.exp(-uval*arg))/(uval*arg)
-        correction = np.where(cos_th>0.99,correction1,correction2)
-
-    correction = SansData(correction,metadata=res.metadata)
-    res.data.x /= correction.data.x
-    
-    return res,correction
 
 
 @module
@@ -1957,6 +1913,51 @@ def divide(data, factor_param, align_by="resolution.lmda,run.guide"):
         return [(d / align_lookup[get_compound_key(d.metadata, align_by)]) for d in data]
     else:# if align is None, match data by index
         return [d / Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0)) for d,f in zip(data, factor_param)]
+
+@nocache
+@module
+def correct_wide_angle(sansdata,trans):
+    '''
+    Wide angle transmission correction (see WorkFileUtils.ipf)
+    
+    **Inputs**
+
+    sansdata (sans2d): measurement with sample in the beam
+    
+    trans (params?): transmission to use in correction
+    
+    **Returns**
+    
+    output (sans2d): corrected for wide_angle
+    
+    correction (sans2d): correction image for each pixel
+    '''
+    
+    if sansdata.theta is None:
+        raise ValueError("Theta is not defined - convert pixels to Q first (use PixelsToQ module)")
+        
+    if trans is None:
+        trans = 1.0
+    else:
+        trans = trans.params['factor']
+    
+    res = sansdata.copy()
+    
+    uval = -1.0*np.log(trans)
+    cos_th = np.cos(res.theta)
+    arg = (1.0-cos_th)/cos_th
+
+    if uval<0.01:
+        correction= 1-0.5*uval*arg
+    else:
+        correction1= 1-0.5*uval*arg
+        correction2 = (1 - np.exp(-uval*arg))/(uval*arg)
+        correction = np.where(cos_th>0.99,correction1,correction2)
+
+    correction = SansData(correction,metadata=res.metadata)
+    res.data.x /= correction.data.x
+    
+    return res,correction
 
 def correct_solid_angle(data):
     """
