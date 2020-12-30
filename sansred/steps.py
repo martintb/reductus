@@ -919,9 +919,9 @@ def shift_data_1d(data,shift_data=False,shift_coeffs=None,shift_to=None):
                     for j in range(shift_to,index,shiftDir):
                         j1 = j
                         j2 = j+shiftDir
-                        q1 = data[sort_index[j1]].Q
+                        q1 = data[sort_index[j1]].meanQ
                         I1 = data[sort_index[j1]].I
-                        q2 = data[sort_index[j2]].Q
+                        q2 = data[sort_index[j2]].meanQ
                         I2 = data[sort_index[j2]].I
                         shiftFac = _calc_intensity_shift(q1,I1,q2,I2)[0]
                         print('shift,shiftFac',shift,shiftFac)
@@ -979,10 +979,6 @@ def _calc_intensity_shift(q1,I1,q2,I2):
     
     I1p = np.interp(q2,q1,I1)
     scale = I1p[mask]/I2[mask]
-    print('minQ,maxQ',minQ,maxQ)
-    print('q2',q2[mask])
-    print('scale',scale)
-    print('scale',scale)
     
     return scale.mean(),scale.std()
 
