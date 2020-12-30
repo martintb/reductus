@@ -2,7 +2,7 @@
   "modules": [
     {
       "x": 5,
-      "module": "ncnr.sans.SuperLoadSANS",
+      "module": "ncnr.sans.load_and_correct_SANS",
       "config": {
         "filelist": [],
         "do_mon_norm": true,
@@ -14,7 +14,7 @@
     },
     {
       "x": 5,
-      "module": "ncnr.sans.SuperLoadSANS",
+      "module": "ncnr.sans.load_and_correct_SANS",
       "config": {
         "filelist": [],
         "do_deadtime": true,
@@ -29,7 +29,7 @@
     },
     {
       "x": 5,
-      "module": "ncnr.sans.SuperLoadSANS",
+      "module": "ncnr.sans.load_and_correct_SANS",
       "config": {
         "filelist": [],
         "do_atten_correct": false,
@@ -44,7 +44,7 @@
     },
     {
       "x": 5,
-      "module": "ncnr.sans.SuperLoadSANS",
+      "module": "ncnr.sans.load_and_correct_SANS",
       "config": {
         "filelist": [],
         "do_atten_correct": false,
@@ -56,7 +56,7 @@
     },
     {
       "x": 5,
-      "module": "ncnr.sans.SuperLoadSANS",
+      "module": "ncnr.sans.load_and_correct_SANS",
       "config": {
         "filelist": [],
         "do_solid_angle_correct": false,
@@ -67,7 +67,7 @@
     },
     {
       "x": 5,
-      "module": "ncnr.sans.SuperLoadSANS",
+      "module": "ncnr.sans.load_and_correct_SANS",
       "config": {
         "filelist": [],
         "do_atten_correct": false,
@@ -99,7 +99,7 @@
       }
     },
     {
-      "module": "ncnr.sans.LoadDIV",
+      "module": "ncnr.sans.load_DIV",
       "title": "Sensitivity File",
       "x": 300,
       "y": 135,
@@ -114,7 +114,7 @@
       "y": 5
     },
     {
-      "module": "ncnr.sans.PixelsToQ",
+      "module": "ncnr.sans.convert_pixels_to_Q",
       "title": "Pixels to Q",
       "x": 685,
       "y": 35,
@@ -130,19 +130,19 @@
       "y": 35
     },
     {
-      "module": "ncnr.sans.shiftIQ",
+      "module": "ncnr.sans.shift_data_1d",
       "title": "Shift",
       "x": 1110,
       "y": 35
     },
     {
-      "module": "ncnr.sans.join_sansIQ",
+      "module": "ncnr.sans.join_data_1d",
       "title": "Join Configurations",
       "x": 1240,
       "y": 35
     },
     {
-      "module": "ncnr.sans.LoadMASK",
+      "module": "ncnr.sans.load_MASK",
       "title": "Mask File",
       "x": 665,
       "y": 100,
@@ -151,7 +151,7 @@
       }
     },
     {
-      "module": "ncnr.sans.mask_points",
+      "module": "ncnr.sans.trim_points_1d",
       "title": "Trim",
       "x": 980,
       "y": 35,

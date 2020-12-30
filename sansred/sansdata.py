@@ -367,7 +367,6 @@ class SansIQData(object):
             },
             "datas": datas
         }
-        #print(plottable)
         return plottable
 
     @exports_text(name="column")

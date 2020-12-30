@@ -15,7 +15,7 @@ function load_sans(load_params, db, noblock, return_type) {
         "name": "loader_template",
         "description": "SANS remote loader",
         "modules": [
-          {"module": "ncnr.sans.LoadRawSANS", "version": "0.1", "config": {}}
+          {"module": "ncnr.sans.load_RawSANS", "version": "0.1", "config": {}}
         ],
         "wires": [],
         "instrument": "ncnr.sans",
