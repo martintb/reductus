@@ -19,19 +19,22 @@ from vsansred.steps import _s, _b
 from .sansdata import SansData, RawSANSData
 
 metadata_lookup = OrderedDict([
+    ("sample.label", "DAS_logs/sample/description"),
+    ("det.des_dis", "DAS_logs/detectorPosition/desiredSoftPosition"),
+    ("resolution.lmda", "instrument/monochromator/wavelength"),
     ("run.filename", "DAS_logs/trajectoryData/fileName"),
     ("analysis.intent", "DAS_logs/trajectoryData/intent"),
     ("analysis.filepurpose", "DAS_logs/trajectoryData/filePurpose"),
-    ("det.des_dis", "DAS_logs/detectorPosition/desiredSoftPosition"),
     ("det.dis", "DAS_logs/detectorPosition/softPosition"),
     ("run.guide", "DAS_logs/guide/guide"),
     ("sample.description", "DAS_logs/sample/description"), # overwritten on load
     ("sample.labl", "DAS_logs/sample/description"), # compatibility
-    ("resolution.lmda", "instrument/monochromator/wavelength"),
     ("resolution.dlmda", "instrument/monochromator/wavelength_error"),
     ("det.beamx", "instrument/detector/beam_center_x"),
     ("det.beamy", "instrument/detector/beam_center_y"),
     ("det.bstop", "DAS_logs/beamStop/size"),
+    ("det.bstopx", "DAS_logs/beamStopX/X"),
+    ("det.bstopy", "DAS_logs/beamStopY/Y"),
     #("det.pixeloffsetx", "instrument/detector/x_offset"), # this is useless
     ("det.pixelsizex", "instrument/detector/x_pixel_size"),
     #("det.pixeloffsety", "instrument/detector/y_offset"), # this is also useless
