@@ -70,7 +70,7 @@ def module(action):
 @module
 def load_ABS(filelist=None, variance=0.0001):
     """
-    loads a ABS file (6-columne format) into a Sans1D
+    loads a ABS file (6-columne format) into a SansIQ
 
     **Inputs**
 
@@ -80,9 +80,9 @@ def load_ABS(filelist=None, variance=0.0001):
     
     **Returns**
 
-    output (sans1d[]): all the entries loaded.
+    output (sansIQ[]): all the entries loaded.
 
-    2018-04-21 Brian Maranville
+    2020-12-23 Tyler Martin
     """
     from .sans_absformat import readNCNRABS
     output = []
@@ -2118,12 +2118,12 @@ def circular_av(data):
     Q_mean = np.array(Q_mean, dtype="float")
     Q_mean_error = np.array(Q_mean_error, dtype="float")
 
-    nominal_output = Sans1dData(Q, I, dx=dx, dv=I_error, xlabel="Q", vlabel="I",
+    nominal_output = SANSData1D(Q, I, dx=dx, dv=I_error, xlabel="Q", vlabel="I",
                         xunits="inv. A", vunits="neutrons")
     nominal_output.metadata = deepcopy(data.metadata)
     nominal_output.metadata['extra_label'] = "_circ"
 
-    mean_output = Sans1dData(Q_mean, I, dx=Q_mean_error, dv=I_error, xlabel="Q", vlabel="I",
+    mean_output = SANSData1D(Q_mean, I, dx=Q_mean_error, dv=I_error, xlabel="Q", vlabel="I",
                         xunits="inv. A", vunits="neutrons")
     mean_output.metadata = deepcopy(data.metadata)
     mean_output.metadata['extra_label'] = "_circ"
@@ -2243,7 +2243,7 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
         # 'none' is the default
         Q_mean_error = np.zeros_like(Q)
 
-    # nominal_output = Sans1dData(Q, I, dx=Q_mean_error, dv=I_var, xlabel="Q", vlabel="I",
+    # nominal_output = SANSData1D(Q, I, dx=Q_mean_error, dv=I_var, xlabel="Q", vlabel="I",
     #                     xunits="inv. A", vunits="neutrons")
     # nominal_output.metadata = deepcopy(data.metadata)
     # nominal_output.metadata['extra_label'] = "_circ"

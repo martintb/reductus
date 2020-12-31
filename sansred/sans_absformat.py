@@ -19,7 +19,7 @@ except ImportError:
 
 import numpy as np
 
-from .sansdata import sansIQData
+from .sansdata import SANSDataIQ
 
 def readNCNRABS(fpath):
     '''Read ASCII .ABS files and, if possible, extract instrument configuration 
@@ -61,5 +61,5 @@ def readNCNRABS(fpath):
                 break
             
     Q,I,dI,dQ,meanQ,ShadowFactor = np.loadtxt(fpath,skiprows=skiprows).T
-    sansIQ = SansIQData(I=I,dI=dI,Q=Q,dQ=dQ,meanQ=meanQ,ShadowFactor=ShadowFactor,metadata=config_dict)
+    sansIQ = SANSDataIQ(I=I,dI=dI,Q=Q,dQ=dQ,meanQ=meanQ,ShadowFactor=ShadowFactor,metadata=config_dict)
     return sansIQ
