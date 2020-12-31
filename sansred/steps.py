@@ -922,19 +922,16 @@ def join_data_1d(data):
 
 @cache
 @module
-def trim_points_1d(data, mask_lo=None,mask_hi=None):
+def trim_points_1d(data, trim_indices=None):
     """
     Identify and trim points from the beginning and end of 1D sans data
 
     **Inputs**
 
-    data (sans1d) : background data which may contain specular point
+    data (sans1d) : background data 
 
-    mask_lo (int*): if set, mask all points below this index. Each dataset
-    should have its own value
-
-    mask_hi (int*): if set, mask this many points from end of dataset. Each
-    dataset should have its own value
+    trim_indices (index[]*): Should always have only two points specified
+    representing the lowest and highest index to trim to/from. 
 
     **Returns**
 
@@ -942,16 +939,21 @@ def trim_points_1d(data, mask_lo=None,mask_hi=None):
 
     | 2020-12-30 Tyler Martin
     """
-    data = copy(data)
+    output = copy(data)
     mask_indices = []
-    if mask_lo:
+    if trim_indices:
+        if not (len(trim_indices)==2):
+            raise ValueError('Trim failure! Exactly two points should be specified for each dataset')
+        mask_lo = min(trim_indices)
+        mask_hi = max(trim_indices)
+
         for j in range(mask_lo):
             mask_indices.append(j)
-    if mask_hi:
-        for j in range(mask_hi):
-            mask_indices.append(len(data.Q)-j)
+
+        for j in range(mask_hi,len(data.Q)):
+            mask_indices.append(j)
+
     if mask_indices:
-        output = copy(data)
         output.mask_indices = mask_indices
     return output
 
