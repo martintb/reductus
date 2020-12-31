@@ -417,9 +417,17 @@ class SansIQData(object):
             "Q_indices": 1
         })
         datagroup["I"] = self.I
-        datagroup["I"].attrs["units"] = "1/m"
+        datagroup["I"].attrs["units"] = "1/cm"
+        datagroup["dI"] = self.dI
+        datagroup["dI"].attrs["units"] = "1/cm"
         datagroup["Q"] = self.Q
-        datagroup["Q"].attrs["units"] = "1/nm"
+        datagroup["Q"].attrs["units"] = "1/Ang"
+        datagroup["dQ"] = self.dQ
+        datagroup["dQ"].attrs["units"] = "1/Ang"
+        datagroup["meanQ"] = self.meanQ
+        datagroup["meanQ"].attrs["units"] = "1/Ang"
+        datagroup["ShadowFactor"] = self.ShadowFactor
+        datagroup["ShadowFactor"].attrs["units"] = "1/Ang"
 
         return {
             "name": _s(self.metadata.get("name", "default_name")),
