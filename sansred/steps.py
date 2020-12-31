@@ -17,7 +17,7 @@ import numpy as np
 from dataflow.lib.uncertainty import Uncertainty
 from dataflow.lib import uncertainty
 
-from .sansdata import RawSANSData, SansData, Sans1dData, SansIQData, Parameters, _s
+from .sansdata import RawSANSData, SANSData2D, SANSData1D, SANSDataIQ, Parameters, _s
 from .sans_vaxformat import readNCNRSensitivity
 
 from vsansred.steps import _s, _b
@@ -94,7 +94,7 @@ def load_ABS(filelist=None, variance=0.0001):
 @module
 def load_DIV(filelist=None, variance=0.0001):
     """
-    loads a DIV file (VAX format) into a SansData obj and returns that.
+    loads a DIV file (VAX format) into a SANSData2D obj and returns that.
 
     **Inputs**
 
@@ -118,7 +118,7 @@ def load_DIV(filelist=None, variance=0.0001):
             name = basename(path)
             fid = BytesIO(url_get(fileinfo, mtime_check=False))
             sens_raw = readNCNRSensitivity(fid)
-            sens = SansData(Uncertainty(sens_raw, sens_raw * variance))
+            sens = SANSData2D(Uncertainty(sens_raw, sens_raw * variance))
             sens.metadata = OrderedDict([
                 ("run.filename", name),
                 ("analysis.groupid", -1),
@@ -137,7 +137,7 @@ def load_DIV(filelist=None, variance=0.0001):
 @module
 def load_MASK(filelist=None, variance=0.0001):
     """
-    loads a MASK file (??? format) into a SansData obj and returns that.
+    loads a MASK file (??? format) into a SANSData2D obj and returns that.
 
     **Inputs**
 
@@ -161,7 +161,7 @@ def load_MASK(filelist=None, variance=0.0001):
             name = basename(path)
             fid = BytesIO(url_get(fileinfo, mtime_check=False))
             mask_raw = readMask(fid)
-            mask = SansData(Uncertainty(mask_raw, mask_raw * variance))
+            mask = SANSData2D(Uncertainty(mask_raw, mask_raw * variance))
             mask.metadata = OrderedDict([
                 ("run.filename", name),
                 ("analysis.groupid", -1),
@@ -218,7 +218,7 @@ def load_RawSANS(filelist=None, check_timestamps=True):
 @module
 def load_SANS(filelist=None, flip=False, transpose=False, check_timestamps=True):
     """
-    loads a data file into a SansData obj and returns that.
+    loads a data file into a SANSData2D obj and returns that.
     Checks to see if data being loaded is 2D; if not, quits
 
     **Inputs**
@@ -262,7 +262,7 @@ def _to_sansdata(rawdata, flip=False, transpose=False):
             subset = np.fliplr(subset)
         if transpose:
             subset = subset.T
-        datasets.append(SansData(data=subset, metadata=rawdata.metadata))
+        datasets.append(SANSData2D(data=subset, metadata=rawdata.metadata))
     return datasets
 
 @cache
@@ -278,7 +278,7 @@ def load_and_correct_SANS(filelist=None,
                        mon0=1e8,
                        check_timestamps=True):
     """
-    loads a data file into a SansData obj, and performs common reduction steps
+    loads a data file into a SANSData2D obj, and performs common reduction steps
     Checks to see if data being loaded is 2D; if not, quits
 
 
@@ -463,6 +463,10 @@ def autosort_heuristic(filelist=None):
     empty_scatt = []
     empty_trans = []
     open_trans = []
+
+    if filelist is None:
+        filelist = []
+
     for f in filelist:
         sansdata = load_and_correct_SANS(filelist=[f], 
                                  do_pixels_to_q=False, 
@@ -900,15 +904,15 @@ def convert_pixels_to_Q(data_list, Tsam_list, beam_center=[None,None], correct_s
 @module
 def join_data_1d(data):
     """
-    Join all sans1d into a single dataset
+    Join all sansIQ into a single dataset
 
     **Inputs**
 
-    data (sans1d[]): data to be joined together
+    data (sansIQ[]): data to be joined together
 
     **Returns**
 
-    output (sans1d): joined data
+    output (sansIQ): joined data
 
     | 2020-12-23 Tyler Martin
     """
@@ -928,14 +932,14 @@ def trim_points_1d(data, trim_indices=None):
 
     **Inputs**
 
-    data (sans1d) : background data 
+    data (sansIQ) : background data 
 
     trim_indices (index[]*): Should always have only two points specified
     representing the lowest and highest index to trim to/from. 
 
     **Returns**
 
-    output (sans1d) : masked data
+    output (sansIQ) : masked data
 
     | 2020-12-30 Tyler Martin
     """
@@ -965,7 +969,7 @@ def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None):
 
     **Inputs**
 
-    data (sans1d[]): 1D data to be scaleed
+    data (sansIQ[]): 1D data to be scaleed
 
     scale_data (bool): whether or not to scale the data
 
@@ -977,7 +981,7 @@ def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None):
 
     **Returns**
 
-    output (sans1d[]): scaleed data
+    output (sansIQ[]): scaleed data
 
     scale_coeff (params[]): scale coefficients
 
@@ -1140,14 +1144,14 @@ def correct_wide_angle(sansdata,trans):
         correction2 = (1 - np.exp(-uval*arg))/(uval*arg)
         correction = np.where(cos_th>0.99,correction1,correction2)
 
-    correction = SansData(correction,metadata=res.metadata)
+    correction = SANSData2D(correction,metadata=res.metadata)
     res.data.x /= correction.data.x
     
     return res,correction
 
 def correct_solid_angle(data):
     """
-    Given a SansData with q, qx, qy, and theta images defined,
+    Given a SANSData2D with q, qx, qy, and theta images defined,
     correct for the fact that the detector is flat and the Ewald sphere
     is curved. Need to calculate theta first, so do convert_pixels_to_Q before this.
 
@@ -1177,7 +1181,7 @@ def correct_solid_angle(data):
     xx = np.square(np.cos((x-xcenter)*sx/sx3))
     yy = np.square(np.cos((y-ycenter)*sy/sy3))
     correction = xx * yy / (np.cos(2*res.theta)**3)
-    correction = SansData(correction,metadata=res.metadata)
+    correction = SANSData2D(correction,metadata=res.metadata)
     res.data.x = res.data.x * correction.data.x
     return res,correction
 
@@ -1185,7 +1189,7 @@ def correct_solid_angle(data):
 @module
 def correct_detector_sensitivity(sansdata, sensitivity):
     """"
-    Given a SansData object and an sensitivity map generated from a div,
+    Given a SANSData2D object and an sensitivity map generated from a div,
     correct for the efficiency of the detector. Recall that sensitivities are
     generated by taking a measurement of plexiglass and dividing by the
     mean value
@@ -1262,7 +1266,7 @@ def correct_attenuation(sample, instrument="NG7"):
 @module
 def correct_detector_efficiency(sansdata):
     """
-    Given a SansData object, corrects for the efficiency of the detection process
+    Given a SANSData2D object, corrects for the efficiency of the detection process
 
     **Inputs**
 
@@ -1346,7 +1350,7 @@ def correct_dead_time(sansdata, deadtime=1.0e-6):
 @module
 def monitor_normalize(sansdata, mon0=1e8):
     """"
-    Given a SansData object, normalize the data to the provided monitor
+    Given a SANSData2D object, normalize the data to the provided monitor
 
     **Inputs**
 
@@ -1424,7 +1428,7 @@ def apply_corrections(data,
 
 @cache
 @module
-def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NG7", integration_box=[55, 74, 53, 72], auto_box=True, margin=5,align_by="resolution.lmda,run.guide"):
+def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NGB", integration_box=[55, 74, 53, 72], auto_box=True, margin=3,align_by="det.des_dis,resolution.lmda,run.guide"):
     """
     Calculate absolute scaling
 
@@ -1548,7 +1552,7 @@ def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NG7", 
 
 
 @module
-def generate_transmission(in_beam, empty_beam, integration_box=[55, 74, 53, 72], align_by="run.configuration", auto_integrate=True, margin=5):
+def generate_transmission(in_beam, empty_beam, integration_box=[55, 74, 53, 72], align_by="run.configuration", auto_integrate=True, margin=3):
     """
     To calculate the transmission, we integrate the intensity in a box
     for a measurement with the substance in the beam and with the substance
@@ -2151,7 +2155,7 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
 
     **Returns**
 
-    output (sans1d): I vs Q output for sans data.
+    output (sansIQ): I vs Q output for sans data.
 
     | 2019-01-01 Brian Maranville
     | 2019-09-05 Adding mask_width as a temporary way to handle basic masking
@@ -2244,12 +2248,12 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
     # nominal_output.metadata = deepcopy(data.metadata)
     # nominal_output.metadata['extra_label'] = "_circ"
 
-    # mean_output = Sans1dData(Q_mean, I, dx=Q_mean_error, dv=I_var, xlabel="Q", vlabel="I",
+    # mean_output = SANSData1D(Q_mean, I, dx=Q_mean_error, dv=I_var, xlabel="Q", vlabel="I",
     #                     xunits="inv. A", vunits="neutrons")
     # mean_output.metadata = deepcopy(data.metadata)
     # mean_output.metadata['extra_label'] = "_circ"
 
-    canonical_output = SansIQData(I, np.sqrt(I_var), Q, Q_mean_error, Q_mean, ShadowFactor, metadata=deepcopy(data.metadata))
+    canonical_output = SANSDataIQ(I, np.sqrt(I_var), Q, Q_mean_error, Q_mean, ShadowFactor, metadata=deepcopy(data.metadata))
     
     return canonical_output
 
@@ -2346,12 +2350,12 @@ def sector_cut(data, sector=[0.0, 90.0], mirror=True):
     Q_mean = np.array(Q_mean, dtype="float")
     Q_mean_error = np.array(Q_mean_error, dtype="float")
 
-    nominal_output = Sans1dData(Q, I, dx=dx, dv=I_error, xlabel="Q", vlabel="I",
+    nominal_output = SANSData1D(Q, I, dx=dx, dv=I_error, xlabel="Q", vlabel="I",
                         xunits="inv. A", vunits="neutrons")
     nominal_output.metadata = deepcopy(data.metadata)
     nominal_output.metadata['extra_label'] = "_%.1f" % (angle,)
 
-    mean_output = Sans1dData(Q_mean, I, dx=Q_mean_error, dv=I_error, xlabel="Q", vlabel="I",
+    mean_output = SANSData1D(Q_mean, I, dx=Q_mean_error, dv=I_error, xlabel="Q", vlabel="I",
                         xunits="inv. A", vunits="neutrons")
     mean_output.metadata = deepcopy(data.metadata)
     mean_output.metadata['extra_label'] = "_%.1f" % (angle,)
@@ -2475,9 +2479,9 @@ def slice_data_2d(data, slicebox=[None,None,None,None]):
     x_sum = uncertainty.sum(data.data[dataslice], axis=1)
     y_sum = uncertainty.sum(data.data[dataslice], axis=0)
     
-    x_output = Sans1dData(x_out, x_sum.x, dx=dx, dv=x_sum.variance, xlabel=data.xlabel, vlabel="I",
+    x_output = SANSData1D(x_out, x_sum.x, dx=dx, dv=x_sum.variance, xlabel=data.xlabel, vlabel="I",
                     xunits="", vunits="neutrons", metadata=data.metadata)
-    y_output = Sans1dData(y_out, y_sum.x, dx=dy, dv=y_sum.variance, xlabel=data.ylabel, vlabel="I",
+    y_output = SANSData1D(y_out, y_sum.x, dx=dy, dv=y_sum.variance, xlabel=data.ylabel, vlabel="I",
                     xunits="", vunits="neutrons", metadata=data.metadata)
                         
     return x_output, y_output
@@ -2532,7 +2536,7 @@ def transmissionDecay(data, slicebox=[None,None,None,None], autosort=True):
         dydata = dydata[sorting_indices]
 
 
-    output = Sans1dData(xdata, ydata, dx=dxdata, dv=dydata, xlabel='time', vlabel="I",
+    output = SANSData1D(xdata, ydata, dx=dxdata, dv=dydata, xlabel='time', vlabel="I",
                     xunits="s", vunits="neutrons", xscale="time", metadata=data[0].metadata)
     
     return output

@@ -16,7 +16,7 @@ from dataflow.lib.h5_open import h5_open_zip
 from vsansred.loader import load_detector, load_metadata
 from vsansred.steps import _s, _b
 
-from .sansdata import SansData, RawSANSData
+from .sansdata import SANSData2D, RawSANSData
 
 metadata_lookup = OrderedDict([
     ("sample.label", "DAS_logs/sample/description"),
@@ -176,7 +176,7 @@ def readSANSNexuz_old(input_file, file_obj=None):
                     metadata[mkey] = field
 
             metadata['entry'] = entryname
-            dataset = SansData(data=areaDetector[i].copy(), metadata=metadata)
+            dataset = SANSData2D(data=areaDetector[i].copy(), metadata=metadata)
             datasets.append(dataset)            
 
     return datasets

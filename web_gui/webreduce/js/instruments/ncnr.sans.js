@@ -46,7 +46,7 @@ instrument.files_filter = function(x) {
 
 instrument.load_file = load_sans;
 instrument.default_categories = [
-  [["analysis.filepurpose"]],
+//  [["analysis.filepurpose"]],
   [["sample.description"]],
   [["run.configuration"]]
 ];

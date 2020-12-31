@@ -3,7 +3,7 @@ from dataflow.automod import make_modules
 
 from . import steps
 from . import templates
-from .sansdata import RawSANSData, SansData, Sans1dData, SansIQData, Parameters
+from .sansdata import RawSANSData, SANSData2D, SANSData1D, SANSDataIQ, Parameters
 
 INSTRUMENT = "ncnr.sans"
 
@@ -13,9 +13,9 @@ def define_instrument():
 
     # Define data types
     sansraw = df.DataType(INSTRUMENT+".raw", RawSANSData)
-    sans2d = df.DataType(INSTRUMENT+".sans2d", SansData)
-    sans1d = df.DataType(INSTRUMENT+".sans1d", Sans1dData)
-    sansIQ = df.DataType(INSTRUMENT+".sansIQ", SansIQData)
+    sans2d = df.DataType(INSTRUMENT+".sans2d", SANSData2D)
+    sans1d = df.DataType(INSTRUMENT+".sans1d", SANSData1D)
+    sansIQ = df.DataType(INSTRUMENT+".sansIQ", SANSDataIQ)
     params = df.DataType(INSTRUMENT+".params", Parameters)
     #offset_data = df.DataType(INSTRUMENT+".offset_data", dict)
 

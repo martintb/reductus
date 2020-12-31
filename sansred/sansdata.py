@@ -37,8 +37,8 @@ def _s(b):
 class RawSANSData(RawVSANSData):
     suffix = ".sans"
 
-class SansData(object):
-    """SansData object used for storing values from a sample file (not div/mask).
+class SANSData2D(object):
+    """SANSData2D object used for storing values from a sample file (not div/mask).
        Stores the array of data as a Uncertainty object (detailed in uncertainty.py)
        Stores all metadata
        q, qx, qy, theta all get updated with values throughout the reduction process
@@ -83,7 +83,7 @@ class SansData(object):
     # Note that I have not defined an inplace subtraction
     def __sub__(self, other):
         result = self.copy()
-        if isinstance(other, SansData):
+        if isinstance(other, SANSData2D):
             result.data = self.data - other.data
         else:
             result.data = self.data - other
@@ -91,14 +91,14 @@ class SansData(object):
     # Actual subtraction
     def __sub1__(self, other):
         result = self.copy()
-        if isinstance(other, SansData):
+        if isinstance(other, SANSData2D):
             result.data = self.data - other.data
         else:
             result.data = self.data - other
         return result
     def __add__(self, other):
         result = self.copy()
-        if isinstance(other, SansData):
+        if isinstance(other, SANSData2D):
             result.data = self.data + other.data
         else:
             result.data = self.data + other
@@ -109,21 +109,21 @@ class SansData(object):
         return result
     def __truediv__(self, other):
         result = self.copy()
-        if isinstance(other, SansData):
+        if isinstance(other, SANSData2D):
             result.data = self.data/other.data
         else:
             result.data = self.data/other
         return result
     def __mul__(self, other):
         result = self.copy()
-        if isinstance(other, SansData):
+        if isinstance(other, SANSData2D):
             result.data = self.data * other.data
         else:
             result.data = self.data * other
         return result
 
     def copy(self):
-        return SansData(copy(self.data), deepcopy(self.metadata),
+        return SANSData2D(copy(self.data), deepcopy(self.metadata),
                         q=copy(self.q), qx=copy(self.qx), qy=copy(self.qy),
                         theta=copy(self.theta), aspect_ratio=self.aspect_ratio,
                         qx_min=self.qx_min, qx_max=self.qx_max, qy_min=self.qy_min, qy_max=self.qy_max,
@@ -204,7 +204,7 @@ class SansData(object):
         metadata.update(_toDictItem(self.metadata, convert_bytes=True))
         return metadata
 
-class Sans1dData(object):
+class SANSData1D(object):
     properties = ['x', 'v', 'dx', 'dv', 'xlabel', 'vlabel', 'xunits', 'vunits', 'xscale', 'vscale', 'metadata', 'fit_function']
 
     def __init__(self, x, v, dx=0, dv=0, xlabel="", vlabel="", xunits="", vunits="", xscale="linear", vscale="linear", metadata=None, fit_function=None):
@@ -271,7 +271,7 @@ class Sans1dData(object):
             "value": value.decode('utf-8'),
         }
 
-class SansIQData(object):
+class SANSDataIQ(object):
     def __init__(self, I=None, dI=None, Q=None, dQ=None, meanQ=None, ShadowFactor=None, label='', metadata=None):
         self._I = I
         self._dI = dI
