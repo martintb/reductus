@@ -87,14 +87,7 @@
       "title": "Absolute Scale",
       "config": {
         "auto_box": true,
-        "integration_box": [
-          57,
-          72,
-          54,
-          70
-        ],
         "instrument": "NGB",
-        "margin": 3,
         "align_by": "det.det_dis,resolution.lmda"
       }
     },
@@ -102,10 +95,7 @@
       "module": "ncnr.sans.load_DIV",
       "title": "Sensitivity File",
       "x": 300,
-      "y": 135,
-      "config": {
-        "filelist": []
-      }
+      "y": 135
     },
     {
       "module": "ncnr.sans.subtract_background",
@@ -145,108 +135,13 @@
       "module": "ncnr.sans.load_MASK",
       "title": "Mask File",
       "x": 665,
-      "y": 100,
-      "config": {
-        "filelist": []
-      }
+      "y": 100
     },
     {
       "module": "ncnr.sans.trim_points_1d",
       "title": "Trim",
       "x": 980,
-      "y": 35,
-      "config": {
-        "mask_indices": [
-          [
-            0,
-            1,
-            10,
-            11,
-            12,
-            146,
-            147,
-            148,
-            149,
-            150,
-            151,
-            152,
-            153,
-            154,
-            155,
-            156,
-            157,
-            158,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9
-          ],
-          [
-            0,
-            1,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            71,
-            72,
-            73,
-            74,
-            75,
-            76,
-            77,
-            78,
-            79,
-            80,
-            81,
-            82,
-            83,
-            84,
-            85,
-            86,
-            87
-          ],
-          [
-            0,
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            74,
-            75,
-            76,
-            77,
-            78,
-            79,
-            80,
-            81,
-            82,
-            83,
-            84,
-            85,
-            86,
-            87
-          ]
-        ],
-        "mask_lo": [
-          6,
-          6,
-          13
-        ],
-        "mask_hi": [
-          15,
-          15,
-          15
-        ]
-      }
+      "y": 35
     }
   ],
   "wires": [

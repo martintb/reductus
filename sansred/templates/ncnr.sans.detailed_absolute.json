@@ -61,12 +61,6 @@
       "title": "T_sample",
       "config": {
         "auto_integrate": true,
-        "integration_box": [
-          57,
-          71,
-          56,
-          68
-        ],
         "align_by": "run.configuration"
       }
     },
@@ -129,13 +123,6 @@
       "title": "T_emptycell",
       "config": {
         "auto_integrate": true,
-        "integration_box": [
-          57,
-          71,
-          56,
-          68
-        ],
-        "margin": 5,
         "align_by": "run.configuration"
       }
     },
@@ -146,12 +133,6 @@
       "title": "Absolute Scaling",
       "config": {
         "auto_box": true,
-        "integration_box": [
-          57,
-          71,
-          56,
-          68
-        ],
         "instrument": "NGB",
         "align_by": "det.det_dis,resolution.lmbda"
       }
@@ -160,10 +141,7 @@
       "module": "ncnr.sans.load_DIV",
       "title": "Sensitivity File",
       "x": 220,
-      "y": 290,
-      "config": {
-        "filelist": []
-      }
+      "y": 290
     },
     {
       "module": "ncnr.sans.circular_av_new",
@@ -175,10 +153,7 @@
       "module": "ncnr.sans.load_MASK",
       "title": "Mask File",
       "x": 520,
-      "y": 315,
-      "config": {
-        "filelist": []
-      }
+      "y": 315
     },
     {
       "module": "ncnr.sans.param_ratio",
@@ -202,24 +177,7 @@
       "module": "ncnr.sans.trim_points_1d",
       "title": "Mask",
       "x": 840,
-      "y": 250,
-      "config": {
-        "mask_indices": [
-          [],
-          [],
-          []
-        ],
-        "mask_lo": [
-          6,
-          6,
-          13
-        ],
-        "mask_hi": [
-          15,
-          15,
-          15
-        ]
-      }
+      "y": 250
     },
     {
       "module": "ncnr.sans.join_data_1d",
