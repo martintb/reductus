@@ -128,7 +128,7 @@ def load_DIV(filelist=None, variance=0.0001):
                 ("sample.description", "PLEX"),
                 ("entry", "entry"),
                 ("sample.labl", "PLEX"),
-                ("run.configuration", "DIV"),
+                ("run.configuration", name),
             ])
             output.append(sens)
     return output
@@ -171,7 +171,7 @@ def load_MASK(filelist=None, variance=0.0001):
                 ("sample.description", "MASK"),
                 ("entry", "entry"),
                 ("sample.labl", "MASK"),
-                ("run.configuration", "MASK"),
+                ("run.configuration", name),
             ])
             output.append(mask)
     return output
