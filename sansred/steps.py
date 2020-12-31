@@ -892,9 +892,9 @@ def convert_pixels_to_Q(data_list, Tsam_list, beam_center=[None,None], correct_s
         output = sorted(output,key=lambda x: np.min(x.q))
     return output
 
-######################################
-## 1D Data Scaling/Shifting/Slicing ##
-######################################
+#############################
+## 1D Data Scaling/Slicing ##
+#############################
 
 @cache
 @module
@@ -957,66 +957,66 @@ def trim_points_1d(data, mask_lo=None,mask_hi=None):
 
 @cache
 @module
-def shift_data_1d(data,shift_data=False,shift_coeffs=None,shift_to=None):
+def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None):
     '''
     Scale intensity across multiple 1D SANS datasets so that the overlap
 
     **Inputs**
 
-    data (sans1d[]): 1D data to be shifted
+    data (sans1d[]): 1D data to be scaleed
 
-    shift_data (bool): whether or not to shift the data
+    scale_data (bool): whether or not to scale the data
 
-    shift_coeffs (float[]): predefined shift coefficients, if unspecified,
+    scale_coeffs (float[]): predefined scale coefficients, if unspecified,
     coeffs are automatically caclulated
 
-    shift_to (int): integer index of data to shift to. Integers specify data
+    scale_to (int): integer index of data to scale to. Integers specify data
     with increasing q
 
     **Returns**
 
-    output (sans1d[]): shifted data
+    output (sans1d[]): scaleed data
 
-    shift_coeff (params[]): shift coefficients
+    scale_coeff (params[]): scale coefficients
 
     | 2020-12-23 Tyler Martin
     '''
     from dataflow.lib import err1d
-    if shift_data:
-        if shift_coeffs is not None:
-            assert len(data)==len(shift_coeffs), "Need to provide as many shift coeffs as data"
+    if scale_data:
+        if scale_coeffs is not None:
+            assert len(data)==len(scale_coeffs), "Need to provide as many scale coeffs as data"
         else:
-            if shift_to is None:
-                shift_to = len(data)-1#shift to highest q
+            if scale_to is None:
+                scale_to = len(data)-1#scale to highest q
             max_q = [max(d.Q) for d in data]
             sort_index = np.argsort(max_q)#data may not be in q-order
-            shift_coeffs = [1.0]*len(data)
+            scale_coeffs = [1.0]*len(data)
             for index in range(len(data)):
-                # determine which direction the shiftIndex is in (higher or lower q)
-                shiftDir = np.sign(index-shift_to) 
-                shift = 1.0 #default shift is no-shift
-                if not (shiftDir==0):
-                    # need to walk from "shiftIndex" curve back to currIndex
-                    # and 'build' shifting coefficient
-                    for j in range(shift_to,index,shiftDir):
+                # determine which direction the scaleIndex is in (higher or lower q)
+                scaleDir = np.sign(index-scale_to) 
+                scale = 1.0 #default scale is no-scale
+                if not (scaleDir==0):
+                    # need to walk from "scaleIndex" curve back to currIndex
+                    # and 'build' scaleing coefficient
+                    for j in range(scale_to,index,scaleDir):
                         j1 = j
-                        j2 = j+shiftDir
+                        j2 = j+scaleDir
                         q1 = data[sort_index[j1]].meanQ
                         I1 = data[sort_index[j1]].I
                         q2 = data[sort_index[j2]].meanQ
                         I2 = data[sort_index[j2]].I
-                        shiftFac = _calc_intensity_shift(q1,I1,q2,I2)[0]
-                        print('shift,shiftFac',shift,shiftFac)
-                        shift *= shiftFac
-                shift_coeffs[sort_index[index]] = shift
-        for d,s in zip(data,shift_coeffs):
+                        scaleFac = _calc_intensity_scale(q1,I1,q2,I2)[0]
+                        print('scale,scaleFac',scale,scaleFac)
+                        scale *= scaleFac
+                scale_coeffs[sort_index[index]] = scale
+        for d,s in zip(data,scale_coeffs):
             d._I*=s
             d._dI*=s
     else:
-        shift_coeffs = [1.0]*len(data)
+        scale_coeffs = [1.0]*len(data)
 
-    shift_output = []
-    for d,s in zip(data,shift_coeffs):
+    scale_output = []
+    for d,s in zip(data,scale_coeffs):
         od = OrderedDict([
             ("factor", s), 
             ("factor_variance", 0.0), 
@@ -1025,15 +1025,15 @@ def shift_data_1d(data,shift_data=False,shift_coeffs=None,shift_to=None):
             ('resolution.lmda',d.metadata['resolution.lmda']),
             ('det.des_dis',d.metadata['det.des_dis']),
             ])
-        shift_output.append( Parameters(od))
-    return data,shift_output
+        scale_output.append( Parameters(od))
+    return data,scale_output
 
 
-def _calc_intensity_shift(q1,I1,q2,I2):
-    '''Calculate the shift coefficient needed to align two intensity curves 
+def _calc_intensity_scale(q1,I1,q2,I2):
+    '''Calculate the scale coefficient needed to align two intensity curves 
     
     The reduced, measured intensity from two different instrument configurations 
-    will often have vertical intensity shifts due to a number of measurement and 
+    will often have vertical intensity scales due to a number of measurement and 
     instrumental reasons. This method allows one to calculate the scale factor needed
     to bring the two curves into alignment.
     
@@ -1049,16 +1049,16 @@ def _calc_intensity_shift(q1,I1,q2,I2):
         
     **Returns**
 
-    scale_mean {scale factor mean} (float): Average shift coefficient 
+    scale_mean {scale factor mean} (float): Average scale coefficient 
 
-    scale_std {scale factor std} (float): Standard deviation of shift coefficient 
+    scale_std {scale factor std} (float): Standard deviation of scale coefficient 
 
     '''
     minQ = max(q1.min(),q2.min())
     maxQ = min(q1.max(),q2.max())
     mask = np.logical_and(q2>=minQ,q2<=maxQ)
     if not mask.sum()>0:
-        raise ValueError('Need overlapping q in order to calculate shift factor! Did you trim too much?')
+        raise ValueError('Need overlapping q in order to calculate scale factor! Did you trim too much?')
     
     I1p = np.interp(q2,q1,I1)
     scale = I1p[mask]/I2[mask]

@@ -130,8 +130,8 @@
       "y": 35
     },
     {
-      "module": "ncnr.sans.shift_data_1d",
-      "title": "Shift",
+      "module": "ncnr.sans.scale_data_1d",
+      "title": "Scale",
       "x": 1110,
       "y": 35
     },
