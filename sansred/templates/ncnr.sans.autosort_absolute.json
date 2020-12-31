@@ -169,7 +169,7 @@
       }
     },
     {
-      "module": "ncnr.sans.autosort",
+      "module": "ncnr.sans.autosort_heuristic",
       "title": "Choose Files",
       "x": 5,
       "y": 5,

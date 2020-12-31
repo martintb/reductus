@@ -66,7 +66,7 @@ def module(action):
 ## FILE LOADING ##
 ##################
 
-@nocache
+@cache
 @module
 def load_ABS(filelist=None, variance=0.0001):
     """
@@ -90,7 +90,7 @@ def load_ABS(filelist=None, variance=0.0001):
         output.append(readNCNRABS(fname))
     return output
 
-@nocache
+@cache
 @module
 def load_DIV(filelist=None, variance=0.0001):
     """
@@ -133,7 +133,7 @@ def load_DIV(filelist=None, variance=0.0001):
             output.append(sens)
     return output
 
-@nocache
+@cache
 @module
 def load_MASK(filelist=None, variance=0.0001):
     """
@@ -176,7 +176,7 @@ def load_MASK(filelist=None, variance=0.0001):
             output.append(mask)
     return output
 
-@nocache
+@cache
 @module
 def load_RawSANS(filelist=None, check_timestamps=True):
     """
@@ -214,7 +214,7 @@ def load_RawSANS(filelist=None, check_timestamps=True):
 
     return data
 
-@nocache
+@cache
 @module
 def load_SANS(filelist=None, flip=False, transpose=False, check_timestamps=True):
     """
@@ -265,7 +265,7 @@ def _to_sansdata(rawdata, flip=False, transpose=False):
         datasets.append(SansData(data=subset, metadata=rawdata.metadata))
     return datasets
 
-@nocache
+@cache
 @module
 def load_and_correct_SANS(filelist=None, 
                        do_pixels_to_q=False, 
@@ -310,6 +310,7 @@ def load_and_correct_SANS(filelist=None,
 
     | 2018-04-21 Brian Maranville
     | 2019-12-11 Changed loader to include sample aperture offset position
+    | 2020-12-23 Tyler Martin - Moved corrections into new module
     """
     data = load_SANS(filelist, flip=False, transpose=False, check_timestamps=check_timestamps)
     
@@ -318,7 +319,7 @@ def load_and_correct_SANS(filelist=None,
     return data 
 
 
-@nocache
+@cache
 @module
 def patch(data, patches=None):
     """
@@ -350,11 +351,91 @@ def patch(data, patches=None):
 
     return data
 
-@nocache
+@cache
 @module
-def autosort(filelist=None):
+def autosort_intent(rawdata, subsort="det.des_dis", add_scattering=True):
     """
     redirects a batch of files to different outputs based on metadata in the files
+
+    **Inputs**
+
+    rawdata (raw[]): datafiles with metadata to allow sorting
+
+    subsort (str): key on which to order subitems within output lists
+
+    add_scattering {Add sample scatterings together} (bool): Add sample scatterings, within
+    group defined by subsort key
+
+    **Returns**
+
+    sample_scatt (sans2d[]): Sample Scattering
+
+    blocked_beam (sans2d[]): Blocked Beam
+
+    empty_scatt (sans2d[]): Empty Cell Scattering
+
+    sample_trans (sans2d[]): Sample Transmission
+
+    empty_trans (sans2d[]): Empty Cell Transmission
+
+    2019-07-24 Brian Maranville
+    """
+
+    sample_scatt = []
+    blocked_beam = []
+    empty_scatt = []
+    sample_trans = []
+    empty_trans = []
+
+    print(rawdata)
+
+    for r in rawdata:
+        purpose = _s(r.metadata['analysis.filepurpose'])
+        intent = _s(r.metadata['analysis.intent'])
+        if intent.lower().strip().startswith('blo'):
+            blocked_beam.extend(to_sansdata(r))
+        elif purpose.lower() == 'scattering' and intent.lower() == 'sample':
+            sample_scatt.extend(to_sansdata(r))
+        elif purpose.lower() == 'scattering' and intent.lower().startswith('empty'):
+            empty_scatt.extend(to_sansdata(r))
+        elif purpose.lower() == 'transmission' and intent.lower() == 'sample':
+            sample_trans.extend(to_sansdata(r))
+        elif purpose.lower() == 'transmission' and intent.lower().startswith('empty'):
+            empty_trans.extend(to_sansdata(r))
+
+    def keyFunc(l):
+        return l.metadata.get(subsort, 0)
+
+    for output in [sample_scatt, blocked_beam, empty_scatt, sample_trans, empty_trans]:
+        output.sort(key=keyFunc)
+    
+    if add_scattering:
+        added_samples = OrderedDict()
+        for s in sample_scatt:
+            key = keyFunc(s)
+            added_samples.setdefault(key, [])
+            added_samples[key].append(s)
+        for key in added_samples:
+            added_samples[key] = addSimple(added_samples[key])
+        sample_scatt = list(added_samples.values())
+
+    return sample_scatt, blocked_beam, empty_scatt, sample_trans, empty_trans
+
+@cache
+@module
+def autosort_heuristic(filelist=None):
+    """
+    Redirects a batch of files to different outputs based on metadata heuristics in the files:
+        - If the x-position of the beamstop (det.bstopx) <-14, file is a flux
+          (transmission) measurement
+            - If "empty" in filename --> Empty Cell Transmission
+            - If "open" in filename  --> Open Beam Transmission
+            - All others             --> Sample Transmission
+        - Otherwise, the file is a scattering measurement
+            - If "empty" in filename   --> Empty Cell Scattering
+            - If "blocked" in filename --> Blocked Beam Scattering
+            - All others               -->Sample Scattering
+    Note that all string matching is done case-insensitive.
 
     **Inputs**
 
@@ -374,8 +455,7 @@ def autosort(filelist=None):
 
     open_trans (sans2d[]): Open Beam Transmission
 
-    | 2019-07-24 Brian Maranville
-    | 2020-12-30 Tyler Martin
+    | 2020-12-30 Tyler Martin 
     """
     sample_scatt = []
     sample_trans = []
@@ -684,7 +764,7 @@ def _calculate_Q(X, Y, Z, q0):
 def _FX(xx,sx3,xcenter,sx):
     return sx3*np.tan((xx-xcenter)*sx/sx3)
 
-@nocache
+@cache
 @module
 def convert_pixels_to_Q(data_list, Tsam_list, beam_center=[None,None], correct_sa=True,correct_wa=True,sort_output=True):
     """
@@ -816,7 +896,7 @@ def convert_pixels_to_Q(data_list, Tsam_list, beam_center=[None,None], correct_s
 ## 1D Data Scaling/Shifting/Slicing ##
 ######################################
 
-@nocache
+@cache
 @module
 def join_data_1d(data):
     """
@@ -830,6 +910,7 @@ def join_data_1d(data):
 
     output (sans1d): joined data
 
+    | 2020-12-23 Tyler Martin
     """
     if len(data)<=1:
         return data
@@ -839,7 +920,7 @@ def join_data_1d(data):
             output.append(d)
         return output
 
-@nocache
+@cache
 @module
 def trim_points_1d(data, mask_lo=None,mask_hi=None):
     """
@@ -874,7 +955,7 @@ def trim_points_1d(data, mask_lo=None,mask_hi=None):
         output.mask_indices = mask_indices
     return output
 
-@nocache
+@cache
 @module
 def shift_data_1d(data,shift_data=False,shift_coeffs=None,shift_to=None):
     '''
@@ -898,6 +979,7 @@ def shift_data_1d(data,shift_data=False,shift_coeffs=None,shift_to=None):
 
     shift_coeff (params[]): shift coefficients
 
+    | 2020-12-23 Tyler Martin
     '''
     from dataflow.lib import err1d
     if shift_data:
@@ -955,21 +1037,22 @@ def _calc_intensity_shift(q1,I1,q2,I2):
     instrumental reasons. This method allows one to calculate the scale factor needed
     to bring the two curves into alignment.
     
-    Arguments
-    ---------
-        q1,q2: np.ndarray
-            An array of q-values (wavenumbers) of each measured intensity input
+    **Inputs**
+
+    q1 (float[]): An array of q-values (wavenumbers) of each measured intensity input
+
+    q2 (float[]): An array of q-values (wavenumbers) of each measured intensity input
+
+    I1 (float[]): An array of intensity-values 
+    
+    I2 (float[]): An array of intensity-values 
         
-        I1,I2: np.ndarray
-            An array of intensity values
-    
-    Returns
-    -------
-    scale factor mean: float
-        Average shift coefficient 
-    
-    scale factor std: float
-        Standard deviation of shift coefficient
+    **Returns**
+
+    scale_mean {scale factor mean} (float): Average shift coefficient 
+
+    scale_std {scale factor std} (float): Standard deviation of shift coefficient 
+
     '''
     minQ = max(q1.min(),q2.min())
     maxQ = min(q1.max(),q2.max())
@@ -982,7 +1065,7 @@ def _calc_intensity_shift(q1,I1,q2,I2):
     
     return scale.mean(),scale.std()
 
-@nocache
+@cache
 @module
 def rescale_1d(data, scale=1.0, dscale=0.0):
     """
@@ -1013,7 +1096,7 @@ def rescale_1d(data, scale=1.0, dscale=0.0):
 ## DATA CORRECTIONS ##
 ######################
 
-@nocache
+@cache
 @module
 def correct_wide_angle(sansdata,trans):
     '''
@@ -1030,6 +1113,8 @@ def correct_wide_angle(sansdata,trans):
     output (sans2d): corrected for wide_angle
     
     correction (sans2d): correction image for each pixel
+
+    | 2020-11-30 Tyler Martin
     '''
     
     if sansdata.theta is None:
@@ -1074,7 +1159,7 @@ def correct_solid_angle(data):
 
     correction (sans2d): 2d image of correction
 
-    2016-08-03 Brian Maranville
+    | 2016-08-03 Brian Maranville
     """
     if data.theta is None:
         raise ValueError("Theta is not defined - convert pixels to Q first (use convert_pixels_to_Q module)")
@@ -1094,7 +1179,7 @@ def correct_solid_angle(data):
     res.data.x = res.data.x * correction.data.x
     return res,correction
 
-@nocache
+@cache
 @module
 def correct_detector_sensitivity(sansdata, sensitivity):
     """"
@@ -1113,7 +1198,7 @@ def correct_detector_sensitivity(sansdata, sensitivity):
 
     output (sans2d): result c in a/b = c
 
-    2017-01-04 unknown
+    | 2017-01-04 unknown
     """
     res = sansdata.copy()
     res.data /= sensitivity.data
@@ -1142,7 +1227,7 @@ def _lookup_attenuation(instrument_name, attenNo, wavelength):
     att_err_interp = np.interp(w, wavelength_key, att_err)
     return {"att": att_interp[0], "att_err": att_err_interp[0]} # err here is percent error
 
-@nocache
+@cache
 @module
 def correct_attenuation(sample, instrument="NG7"):
     """
@@ -1171,7 +1256,7 @@ def correct_attenuation(sample, instrument="NG7"):
     return atten_corrected
 
 
-@nocache
+@cache
 @module
 def correct_detector_efficiency(sansdata):
     """
@@ -1229,7 +1314,7 @@ def correct_detector_efficiency(sansdata):
 
     return res
 
-@nocache
+@cache
 @module
 def correct_dead_time(sansdata, deadtime=1.0e-6):
     """
@@ -1246,7 +1331,7 @@ def correct_dead_time(sansdata, deadtime=1.0e-6):
 
     output (sans2d): corrected for dead time
 
-    2010-01-03 Andrew Jackson?
+    | 2010-01-03 Andrew Jackson?
     """
 
     dscale = 1.0/(1.0-deadtime*(np.sum(sansdata.data)/sansdata.metadata["run.rtime"]))
@@ -1255,7 +1340,7 @@ def correct_dead_time(sansdata, deadtime=1.0e-6):
     result.data *= dscale
     return result
 
-@nocache
+@cache
 @module
 def monitor_normalize(sansdata, mon0=1e8):
     """"
@@ -1278,7 +1363,7 @@ def monitor_normalize(sansdata, mon0=1e8):
     res.data *= mon0/monitor
     return res
 
-@nocache
+@cache
 @module
 def apply_corrections(data, 
                      do_pixels_to_q=False, 
@@ -1291,6 +1376,9 @@ def apply_corrections(data,
                      mon0=1e8,
                     ):
     '''
+
+    Apply various corrections to 2D sans data. 
+
     **Inputs**
 
     data (sans2d[]): data to correct
@@ -1311,13 +1399,15 @@ def apply_corrections(data,
 
     mon0 (float): provided monitor
     
-
     **Returns**
 
     output (sans2d[]): all the entries loaded.
+
+    | 2020-12-23 Tyler Martin
     '''
     
     if do_solid_angle_correct or do_pixels_to_q:
+        #cannot correct_wide_angle transmisisons (correct_wa) without sample transmission
         data = [convert_pixels_to_Q(d,correct_sa=do_solid_angle_correct,correct_wa=False) for d in data]
     if do_det_eff:
         data = [correct_detector_efficiency(d) for d in data]
@@ -1330,7 +1420,7 @@ def apply_corrections(data,
 
     return data
 
-@nocache
+@cache
 @module
 def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NG7", integration_box=[55, 74, 53, 72], auto_box=True, margin=5,align_by="resolution.lmda,run.guide"):
     """
@@ -1368,6 +1458,7 @@ def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NG7", 
     | 2017-01-13 Andrew Jackson
     | 2019-07-04 Brian Maranville
     | 2019-07-14 Brian Maranville
+    | 2020-12-23 Tyler Martin added fileloop, debuged against IGOR
     """
 
     eb_lookup = dict([(_get_compound_key(eb.metadata, 'det.des_dis,resolution.lmda'), eb) for eb in empty_list])
@@ -1557,6 +1648,11 @@ def _generate_transmission(in_beam, empty_beam, integration_box=None, auto_integ
 @module
 def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans,empty_cell_trans,open_beam_trans):
     '''
+    Perform SANS background correction using reference measurements:
+
+    CORRECTED = (SAMPLE - BLOCKED) - (T_SAMPLE/T_EMPTYCELL)*(EMPTYCELL-BLOCKED)
+    
+    where T_X is the calculated transmission of X.
 
     **Inputs**
 
@@ -1583,7 +1679,6 @@ def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans
     open_beam_trans_out (sans2d[]): passthrough of 2d open_beam to clean up wireframe
 
     | 2020-12-29 Tyler Martin
-
     '''
     A = subtract(sample_scatt, blocked_scatt, align_by='run.configuration')
     B = subtract(empty_cell_scatt, blocked_scatt, align_by='run.configuration')
@@ -1684,7 +1779,8 @@ def divide(data, factor_param, align_by="resolution.lmda,run.guide"):
 
     output (sans2d[]): result (c in a/b = c)
 
-    2010-01-01 unknown
+    | 2010-01-01 unknown
+    | 2020-12-23 Tyler Martin Added align_by
     """
     if not factor_param or len(factor_param) == 0:
         return data
@@ -1698,7 +1794,7 @@ def divide(data, factor_param, align_by="resolution.lmda,run.guide"):
     else:# if align is None, match data by index
         return [d / Uncertainty(f.params.get('factor', 1.0), f.params.get('factor_variance', 0.0)) for d,f in zip(data, factor_param)]
 
-def uncertainty_to_params(u,metadata):
+def _uncertainty_to_params(u,metadata):
     return Parameters(OrderedDict([
                ("factor", u.x), 
                ("factor_variance", u.variance),
@@ -1714,7 +1810,8 @@ def uncertainty_to_params(u,metadata):
 @module
 def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lmda,run.guide"):
     """
-    Algebraic ratio of two parameter sets
+    Algebraic ratio of two parameter sets. Attempts to do alignment on
+    parameters based on align_by
 
     **Inputs**
 
@@ -1729,7 +1826,7 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
 
     output (params[]): result (c in a/b = c)
 
-    2010-12-24 Tyler Martin
+    | 2020-12-24 Tyler Martin
     """
 
     
@@ -1738,7 +1835,7 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
     oneParm1 = (len(factor_param1)==1)
     oneParm2 = (len(factor_param2)==1)
     if noParm1 and noParm2:
-        output = [uncertainty_to_params(Uncertainty(1.0,0.0),{})]
+        output = [_uncertainty_to_params(Uncertainty(1.0,0.0),{})]
 
     elif noParm2 or oneParm2:
         if oneParm2:
@@ -1750,7 +1847,7 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
         output = []
         for f1 in factor_param1:
             f1_U = Uncertainty(f1.params.get('factor', 1.0), f1.params.get('factor_variance', 0.0)) 
-            output.append(uncertainty_to_params(f1_U/f2_U,f1.params))
+            output.append(_uncertainty_to_params(f1_U/f2_U,f1.params))
     elif noParm1 or oneParm1:
         if oneParm1:
             f1 = factor_param1[0]
@@ -1761,7 +1858,7 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
         output = []
         for f2 in factor_param2:
             f2_U = Uncertainty(f2.params.get('factor', 1.0), f2.params.get('factor_variance', 0.0)) 
-            output.append(uncertainty_to_params(f1_U/f2_U,f2.params))
+            output.append(_uncertainty_to_params(f1_U/f2_U,f2.params))
 
     elif align_by.lower() != "none":
         # make lookup:
@@ -1780,7 +1877,7 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
             key = _get_compound_key(f1.params, align_by)
             f1_U= Uncertainty(f1.params.get('factor', 1.0), f1.params.get('factor_variance', 0.0)) 
             ratio = f1_U/align_lookup2[key]
-            output.append(uncertainty_to_params(ratio,f1.params))
+            output.append(_uncertainty_to_params(ratio,f1.params))
             
     else:# if align is None, match data by index
         output = []
@@ -1788,7 +1885,7 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
             f1_U = Uncertainty(f1.params.get('factor', 1.0), f1.params.get('factor_variance', 0.0)) 
             f2_U = Uncertainty(f2.params.get('factor', 1.0), f2.params.get('factor_variance', 0.0)) 
             ratio = f1_U/align_lookup2[key]
-            output.append(uncertainty_to_params(ratio,f1.params))
+            output.append(_uncertainty_to_params(ratio,f1.params))
 
     return output
 
@@ -1796,7 +1893,7 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
 ## DIV HELPERS ##
 #################
 
-@nocache
+@cache
 @module
 def patchData(data1, data2, xmin=55, xmax=74, ymin=53, ymax=72):
     """
@@ -1828,7 +1925,7 @@ def patchData(data1, data2, xmin=55, xmax=74, ymin=53, ymax=72):
     output.data[patch_slice] = data2.data[patch_slice]
     return output
 
-@nocache
+@cache
 @module
 def addSimple(data):
     """
@@ -1897,7 +1994,7 @@ def groupAddData(data, group_by="run.configuration,sample.description"):
     output = [addSimple(g) for g in groups.values()]
     return output
 
-@nocache
+@cache
 @module
 def makeDIV(data1, data2, patchbox=(55, 74, 53, 72)):
     """
@@ -1931,7 +2028,7 @@ def makeDIV(data1, data2, patchbox=(55, 74, 53, 72)):
 ## DATA TRANSFORMS ##
 #####################
 
-@nocache
+@cache
 @module
 def circular_av(data):
     """
@@ -2030,11 +2127,11 @@ def circular_av(data):
 def oversample_2d(input_array, oversampling):
     return np.repeat(np.repeat(input_array, oversampling, 0), oversampling, 1)
 
-@nocache #nocache
+@cache
 @module
 def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_method='none'):
     """
-    Using a circular average, it converts data to 1D (Q vs. I)
+    Using a circular average, it converts 2D data to 1D (I vs. Q)
 
     **Inputs**
 
@@ -2057,6 +2154,7 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
     | 2019-01-01 Brian Maranville
     | 2019-09-05 Adding mask_width as a temporary way to handle basic masking
     | 2019-12-11 Brian Maranville adding dQ_method opts
+    | 2020-12-23 Tyler Martin added mask_file input
     | 2020-12-30 Tyler Martin removed extra outputs
     """
 
@@ -2153,7 +2251,7 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
     
     return canonical_output
 
-@nocache
+@cache
 @module
 def sector_cut(data, sector=[0.0, 90.0], mirror=True):
     """
@@ -2176,7 +2274,7 @@ def sector_cut(data, sector=[0.0, 90.0], mirror=True):
 
     mean_output (sans1d): converted to I vs. mean Q within integrated region
 
-    2016-04-15 Brian Maranville
+    | 2016-04-15 Brian Maranville
     """
     from .draw_annulus_aa import sector_cut_antialiased
 
@@ -2279,7 +2377,7 @@ def radial_to_cylinderical_2d(data, theta_offset = 0.0, oversample_th = 2.0, ove
 
     mask (sans2d): normalization array
 
-    2017-05-26 Brian Maranville
+    | 2017-05-26 Brian Maranville
     """
 
     from .cylindrical import ConvertToCylindrical
@@ -2336,7 +2434,7 @@ def slice_data_2d(data, slicebox=[None,None,None,None]):
 
     yout (sans1d) : yslice
 
-    2018-04-20 Brian Maranville
+    | 2018-04-20 Brian Maranville
     """
     
     if slicebox is None:
@@ -2382,7 +2480,7 @@ def slice_data_2d(data, slicebox=[None,None,None,None]):
                         
     return x_output, y_output
 
-@nocache
+@cache
 @module
 def transmissionDecay(data, slicebox=[None,None,None,None], autosort=True):
     """
@@ -2400,7 +2498,7 @@ def transmissionDecay(data, slicebox=[None,None,None,None], autosort=True):
 
     sum (sans1d) : integrated counts vs. middle of count time (average of start and end times)
 
-    2018-04-24 Brian Maranville
+    | 2018-04-24 Brian Maranville
     """
     import datetime, iso8601
     if slicebox is None:
