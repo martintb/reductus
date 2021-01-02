@@ -277,6 +277,8 @@ def load_and_correct_SANS(filelist=None,
                        do_atten_correct=True, 
                        mon0=1e8,
                        check_timestamps=True,
+                       instrument='NGB'
+                       ):
     """
     loads a data file into a SANSData2D obj, and performs common reduction steps
     Checks to see if data being loaded is 2D; if not, quits
@@ -304,6 +306,8 @@ def load_and_correct_SANS(filelist=None,
     
     check_timestamps (bool): verify that timestamps on file match request
 
+    instrument (opt:NG7|NGB|NGB30): instrument name
+
     **Returns**
 
     output (sans2d[]): all the entries loaded.
@@ -315,7 +319,7 @@ def load_and_correct_SANS(filelist=None,
     data = load_SANS(filelist, flip=False, transpose=False, check_timestamps=check_timestamps)
     
     data = apply_corrections(data, do_pixels_to_q, do_solid_angle_correct, do_det_eff, do_deadtime,
-                  deadtime, do_mon_norm, do_atten_correct, mon0)
+            deadtime, do_mon_norm, do_atten_correct, mon0,instrument)
     return data 
 
 
@@ -423,7 +427,7 @@ def autosort_intent(rawdata, subsort="det.des_dis", add_scattering=True):
 
 @nocache
 @module
-def autosort_heuristic(filelist=None):
+def autosort_heuristic(filelist=None,instrument='NGB'):
     """
     Redirects a batch of files to different outputs based on metadata heuristics in the files:
         - If the x-position of the beamstop (det.bstopx) <-14, file is a flux
@@ -440,6 +444,8 @@ def autosort_heuristic(filelist=None):
     **Inputs**
 
     filelist (fileinfo[]): Files to open.
+
+    instrument (opt:NG7|NGB|NGB30): instrument name
 
     **Returns**
 
@@ -474,8 +480,10 @@ def autosort_heuristic(filelist=None):
                                  do_det_eff=True, 
                                  do_deadtime=True,
                                  do_mon_norm=False, 
-                                 do_atten_correct=False, 
-                                 check_timestamps=True)[0]
+                                 do_atten_correct=True, 
+                                 check_timestamps=True,
+                                 instrument=instrument
+                                 )[0]
         label = _s(sansdata.metadata['sample.description']).lower()
         if sansdata.metadata['det.bstopx']<-14:
             #transmission
@@ -487,6 +495,7 @@ def autosort_heuristic(filelist=None):
                 sample_trans.append(sansdata)
         else:
             sansdata = monitor_normalize(sansdata)
+            # sansdata = correct_attenuation(sansdata,instrument)
             #scattering
             if 'blocked' in label:
                 blocked_scatt.append(sansdata)
@@ -1012,7 +1021,6 @@ def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None):
                         q2 = data[sort_index[j2]].meanQ
                         I2 = data[sort_index[j2]].I
                         scaleFac = _calc_intensity_scale(q1,I1,q2,I2)[0]
-                        print('scale,scaleFac',scale,scaleFac)
                         scale *= scaleFac
                 scale_coeffs[sort_index[index]] = scale
         for d,s in zip(data,scale_coeffs):
@@ -1380,6 +1388,7 @@ def apply_corrections(data,
                      do_mon_norm=True, 
                      do_atten_correct=True, 
                      mon0=1e8,
+                     instrument='NGB'
                     ):
     '''
 
@@ -1404,6 +1413,8 @@ def apply_corrections(data,
     do_mon_norm {Monitor normalization} (bool): normalize data to a provided monitor value
 
     mon0 (float): provided monitor
+
+    instrument (opt:NG7|NGB|NGB30): instrument name
     
     **Returns**
 
@@ -1422,7 +1433,7 @@ def apply_corrections(data,
     if do_mon_norm:
         data = [monitor_normalize(d, mon0=mon0) for d in data]
     if do_atten_correct:
-        data = [correct_attenuation(d) for d in data]
+        data = [correct_attenuation(d,instrument=instrument) for d in data]
 
     return data
 
@@ -1444,7 +1455,7 @@ def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NGB", 
 
     div (sans2d): DIV measurement
 
-    instrument (opt:NG7|NGB|NGB30): instrument name, should be NG7 or NG3
+    instrument (opt:NG7|NGB|NGB30): instrument name
 
     integration_box (range:xy): region over which to integrate
 
