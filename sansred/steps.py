@@ -1563,7 +1563,7 @@ def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NGB", 
 
 @nocache
 @module
-def generate_transmission(in_beam, empty_beam, integration_box=[55, 74, 53, 72], align_by="run.configuration", auto_integrate=True, margin=3):
+def generate_transmission(in_beam, empty_beam, integration_box=[55, 74, 53, 72], align_by="resolution.lmda,det.des_dis", auto_integrate=True, margin=3):
     """
     To calculate the transmission, we integrate the intensity in a box
     for a measurement with the substance in the beam and with the substance
@@ -1621,13 +1621,13 @@ def generate_transmission(in_beam, empty_beam, integration_box=[55, 74, 53, 72],
         for ib in in_beam:
             eb = eb_lookup.get(_get_compound_key(ib.metadata, align_by), None)
             if eb is None:
-                raise ValueError("no matching empty was found for configuration: " + _get_compound_key(ib.metadata, align_by))
+                raise ValueError("no matching empty (open beam) was found for configuration: " + _get_compound_key(ib.metadata, align_by))
             output.append(_generate_transmission(ib, eb, integration_box=integration_box, auto_integrate=auto_integrate, margin=margin))
         return output        
         
 def _generate_transmission(in_beam, empty_beam, integration_box=None, auto_integrate=True, margin=5):
     if auto_integrate:
-        height, x, y, width_x, width_y = _moments(empty_beam.data.x)
+        height, x, y, width_x, width_y = _moments_fit(empty_beam.data.x)
         center_x = x + 0.5
         center_y = y + 0.5
 
@@ -1652,6 +1652,8 @@ def _generate_transmission(in_beam, empty_beam, integration_box=None, auto_integ
         ("det.des_dis", in_beam.metadata['det.des_dis']),
         ("resolution.lmda", in_beam.metadata['resolution.lmda']),
         ("run.guide", in_beam.metadata['run.guide']),
+        ("flux_sample", I_in_beam),
+        ("flux_open", I_empty_beam),
         ("box_used", {"xmin": xmin, "xmax": xmax, "ymin": ymin, "ymax": ymax})
     ]))
 
@@ -1697,21 +1699,21 @@ def subtract_background(sample_scatt,blocked_scatt,empty_cell_scatt,sample_trans
 
     | 2020-12-29 Tyler Martin
     '''
-    A = subtract(sample_scatt, blocked_scatt, align_by='run.configuration')
-    B = subtract(empty_cell_scatt, blocked_scatt, align_by='run.configuration')
+    A = subtract(sample_scatt, blocked_scatt, align_by='resolution.lmda,det.des_dis')
+    B = subtract(empty_cell_scatt, blocked_scatt, align_by='resolution.lmda,det.des_dis')
 
-    Tsam = generate_transmission(sample_trans,open_beam_trans,auto_integrate=True,align_by='run.configuration')
-    Tempty = generate_transmission(empty_cell_trans,open_beam_trans,auto_integrate=True,align_by='run.configuration')
+    Tsam = generate_transmission(sample_trans,open_beam_trans,auto_integrate=True,align_by='resolution.lmda,det.des_dis')
+    Tempty = generate_transmission(empty_cell_trans,open_beam_trans,auto_integrate=True,align_by='resolution.lmda,det.des_dis')
     Tratio = param_ratio(Tsam,Tempty,align_by='resolution.lmda')
 
     C = product(B, Tratio, align_by='resolution.lmda')
 
-    COR = subtract(A, C, align_by='run.configuration')
+    COR = subtract(A, C, align_by='resolution.lmda,det.des_dis')
     return COR,Tsam,Tempty,open_beam_trans
 
 
 @module
-def subtract(subtrahend, minuend, align_by='run.configuration'):
+def subtract(subtrahend, minuend, align_by='resolution.lmda,det.des_dis'):
     """
     Algebraic subtraction of datasets pixel by pixel
 
