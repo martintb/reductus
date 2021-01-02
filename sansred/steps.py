@@ -66,7 +66,7 @@ def module(action):
 ## FILE LOADING ##
 ##################
 
-@cache
+@nocache
 @module
 def load_ABS(filelist=None, variance=0.0001):
     """
@@ -90,7 +90,7 @@ def load_ABS(filelist=None, variance=0.0001):
         output.append(readNCNRABS(fname))
     return output
 
-@cache
+@nocache
 @module
 def load_DIV(filelist=None, variance=0.0001):
     """
@@ -133,7 +133,7 @@ def load_DIV(filelist=None, variance=0.0001):
             output.append(sens)
     return output
 
-@cache
+@nocache
 @module
 def load_MASK(filelist=None, variance=0.0001):
     """
@@ -176,7 +176,7 @@ def load_MASK(filelist=None, variance=0.0001):
             output.append(mask)
     return output
 
-@cache
+@nocache
 @module
 def load_RawSANS(filelist=None, check_timestamps=True):
     """
@@ -214,7 +214,7 @@ def load_RawSANS(filelist=None, check_timestamps=True):
 
     return data
 
-@cache
+@nocache
 @module
 def load_SANS(filelist=None, flip=False, transpose=False, check_timestamps=True):
     """
@@ -265,7 +265,7 @@ def _to_sansdata(rawdata, flip=False, transpose=False):
         datasets.append(SANSData2D(data=subset, metadata=rawdata.metadata))
     return datasets
 
-@cache
+@nocache
 @module
 def load_and_correct_SANS(filelist=None, 
                        do_pixels_to_q=False, 
@@ -276,7 +276,7 @@ def load_and_correct_SANS(filelist=None,
                        do_mon_norm=True, 
                        do_atten_correct=True, 
                        mon0=1e8,
-                       check_timestamps=True):
+                       check_timestamps=True,
     """
     loads a data file into a SANSData2D obj, and performs common reduction steps
     Checks to see if data being loaded is 2D; if not, quits
@@ -319,7 +319,7 @@ def load_and_correct_SANS(filelist=None,
     return data 
 
 
-@cache
+@nocache
 @module
 def patch(data, patches=None):
     """
@@ -351,7 +351,7 @@ def patch(data, patches=None):
 
     return data
 
-@cache
+@nocache
 @module
 def autosort_intent(rawdata, subsort="det.des_dis", add_scattering=True):
     """
@@ -421,7 +421,7 @@ def autosort_intent(rawdata, subsort="det.des_dis", add_scattering=True):
 
     return sample_scatt, blocked_beam, empty_scatt, sample_trans, empty_trans
 
-@cache
+@nocache
 @module
 def autosort_heuristic(filelist=None):
     """
@@ -768,7 +768,7 @@ def _calculate_Q(X, Y, Z, q0):
 def _FX(xx,sx3,xcenter,sx):
     return sx3*np.tan((xx-xcenter)*sx/sx3)
 
-@cache
+@nocache
 @module
 def convert_pixels_to_Q(data_list, Tsam_list, beam_center=[None,None], correct_sa=True,correct_wa=True,sort_output=True):
     """
@@ -900,7 +900,7 @@ def convert_pixels_to_Q(data_list, Tsam_list, beam_center=[None,None], correct_s
 ## 1D Data Scaling/Slicing ##
 #############################
 
-@cache
+@nocache
 @module
 def join_data_1d(data):
     """
@@ -924,7 +924,7 @@ def join_data_1d(data):
             output.append(d)
         return output
 
-@cache
+@nocache
 @module
 def trim_points_1d(data, trim_indices=None):
     """
@@ -961,7 +961,7 @@ def trim_points_1d(data, trim_indices=None):
         output.mask_indices = mask_indices
     return output
 
-@cache
+@nocache
 @module
 def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None):
     '''
@@ -1071,7 +1071,7 @@ def _calc_intensity_scale(q1,I1,q2,I2):
     
     return scale.mean(),scale.std()
 
-@cache
+@nocache
 @module
 def rescale_1d(data, scale=1.0, dscale=0.0):
     """
@@ -1102,7 +1102,7 @@ def rescale_1d(data, scale=1.0, dscale=0.0):
 ## DATA CORRECTIONS ##
 ######################
 
-@cache
+@nocache
 @module
 def correct_wide_angle(sansdata,trans):
     '''
@@ -1185,7 +1185,7 @@ def correct_solid_angle(data):
     res.data.x = res.data.x * correction.data.x
     return res,correction
 
-@cache
+@nocache
 @module
 def correct_detector_sensitivity(sansdata, sensitivity):
     """"
@@ -1233,7 +1233,7 @@ def _lookup_attenuation(instrument_name, attenNo, wavelength):
     att_err_interp = np.interp(w, wavelength_key, att_err)
     return {"att": att_interp[0], "att_err": att_err_interp[0]} # err here is percent error
 
-@cache
+@nocache
 @module
 def correct_attenuation(sample, instrument="NG7"):
     """
@@ -1262,7 +1262,7 @@ def correct_attenuation(sample, instrument="NG7"):
     return atten_corrected
 
 
-@cache
+@nocache
 @module
 def correct_detector_efficiency(sansdata):
     """
@@ -1320,7 +1320,7 @@ def correct_detector_efficiency(sansdata):
 
     return res
 
-@cache
+@nocache
 @module
 def correct_dead_time(sansdata, deadtime=1.0e-6):
     """
@@ -1346,7 +1346,7 @@ def correct_dead_time(sansdata, deadtime=1.0e-6):
     result.data *= dscale
     return result
 
-@cache
+@nocache
 @module
 def monitor_normalize(sansdata, mon0=1e8):
     """"
@@ -1369,7 +1369,7 @@ def monitor_normalize(sansdata, mon0=1e8):
     res.data *= mon0/monitor
     return res
 
-@cache
+@nocache
 @module
 def apply_corrections(data, 
                      do_pixels_to_q=False, 
@@ -1426,7 +1426,7 @@ def apply_corrections(data,
 
     return data
 
-@cache
+@nocache
 @module
 def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NGB", integration_box=[55, 74, 53, 72], auto_box=True, margin=3,align_by="det.des_dis,resolution.lmda,run.guide"):
     """
@@ -1550,7 +1550,7 @@ def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NGB", 
     return ABS_list,params_list
 
 
-
+@nocache
 @module
 def generate_transmission(in_beam, empty_beam, integration_box=[55, 74, 53, 72], align_by="run.configuration", auto_integrate=True, margin=3):
     """
@@ -1899,7 +1899,7 @@ def param_ratio(factor_param1,factor_param2, align_by="det.des_dis,resolution.lm
 ## DIV HELPERS ##
 #################
 
-@cache
+@nocache
 @module
 def patchData(data1, data2, xmin=55, xmax=74, ymin=53, ymax=72):
     """
@@ -1931,7 +1931,7 @@ def patchData(data1, data2, xmin=55, xmax=74, ymin=53, ymax=72):
     output.data[patch_slice] = data2.data[patch_slice]
     return output
 
-@cache
+@nocache
 @module
 def addSimple(data):
     """
@@ -2000,7 +2000,7 @@ def groupAddData(data, group_by="run.configuration,sample.description"):
     output = [addSimple(g) for g in groups.values()]
     return output
 
-@cache
+@nocache
 @module
 def makeDIV(data1, data2, patchbox=(55, 74, 53, 72)):
     """
@@ -2034,7 +2034,7 @@ def makeDIV(data1, data2, patchbox=(55, 74, 53, 72)):
 ## DATA TRANSFORMS ##
 #####################
 
-@cache
+@nocache
 @module
 def circular_av(data):
     """
@@ -2133,7 +2133,7 @@ def circular_av(data):
 def oversample_2d(input_array, oversampling):
     return np.repeat(np.repeat(input_array, oversampling, 0), oversampling, 1)
 
-@cache
+@nocache
 @module
 def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_method='none'):
     """
@@ -2257,7 +2257,7 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
     
     return canonical_output
 
-@cache
+@nocache
 @module
 def sector_cut(data, sector=[0.0, 90.0], mirror=True):
     """
@@ -2486,7 +2486,7 @@ def slice_data_2d(data, slicebox=[None,None,None,None]):
                         
     return x_output, y_output
 
-@cache
+@nocache
 @module
 def transmissionDecay(data, slicebox=[None,None,None,None], autosort=True):
     """
