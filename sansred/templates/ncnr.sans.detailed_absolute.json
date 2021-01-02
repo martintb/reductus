@@ -58,11 +58,7 @@
       "x": 240,
       "module": "ncnr.sans.generate_transmission",
       "y": 215,
-      "title": "T_sample",
-      "config": {
-        "auto_integrate": true,
-        "align_by": "run.configuration"
-      }
+      "title": "T_sample"
     },
     {
       "x": 5,
@@ -78,28 +74,19 @@
       "x": 425,
       "module": "ncnr.sans.subtract",
       "y": 0,
-      "title": "A=SAM-BGD",
-      "config": {
-        "align_by": "run.configuration"
-      }
+      "title": "A=SAM-BGD"
     },
     {
       "x": 275,
       "module": "ncnr.sans.subtract",
       "y": 60,
-      "title": "B=EMP-BGD",
-      "config": {
-        "align_by": "run.configuration"
-      }
+      "title": "B=EMP-BGD"
     },
     {
       "x": 760,
       "module": "ncnr.sans.subtract",
       "y": 0,
-      "title": "COR = A-C",
-      "config": {
-        "align_by": "run.configuration"
-      }
+      "title": "COR = A-C"
     },
     {
       "x": 0,
@@ -120,11 +107,7 @@
       "x": 240,
       "module": "ncnr.sans.generate_transmission",
       "y": 130,
-      "title": "T_emptycell",
-      "config": {
-        "auto_integrate": true,
-        "align_by": "run.configuration"
-      }
+      "title": "T_emptycell"
     },
     {
       "x": 490,
@@ -132,9 +115,7 @@
       "y": 160,
       "title": "Absolute Scaling",
       "config": {
-        "auto_box": true,
-        "instrument": "NGB",
-        "align_by": "det.det_dis,resolution.lmbda"
+        "instrument": "NGB"
       }
     },
     {
