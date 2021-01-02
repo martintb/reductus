@@ -1545,14 +1545,15 @@ def absolute_scaling(sample_list, empty_list, Tsam_list, div, instrument="NGB", 
         ABS /=div.data
 
         params = OrderedDict([
-            ("sample.description", sample.metadata['sample.description']),
-            ("resolution.lambda", sample.metadata['resolution.lmda']),
-            ("det.des_dis", sample.metadata['det.des_dis']),
-            ("DETCNT", detCnt.x),
-            ("attentrans", attenTrans.x),
-            ("monCnt", monCnt),
             ("kappa", kappa.x),
-            ("Dsam", Dsam),
+            ("Sample Description", sample.metadata['sample.description']),
+            ("Wavelength", sample.metadata['resolution.lmda']),
+            ("Detector Distance", sample.metadata['det.des_dis']),
+            ("Detector Counts", detCnt.x),
+            ("Attenuation Factor", attenTrans.x),
+            ("Monitor Counts", monCnt),
+            ("Sample Thickness", Dsam),
+            ("Sample Transmission", Tsam_factor),
             ("box_used", {"xmin": xmin, "xmax": xmax, "ymin": ymin, "ymax": ymax})
         ])
         #------------------------------------
