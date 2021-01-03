@@ -2144,12 +2144,77 @@ def circular_av(data):
 
     return nominal_output, mean_output
 
-def oversample_2d(input_array, oversampling):
+def _oversample_2d(input_array, oversampling):
     return np.repeat(np.repeat(input_array, oversampling, 0), oversampling, 1)
+
+def _calc_igor_qvals(data,mask):
+    '''
+    This is a transliteration of the igor macro code because it calculates the
+    number of qbins (nq) on the fly in a complicated way while it is
+    histogramming. See CircSecAve.ipf
+    '''
+    NumX = data.data.shape[0]
+    NumY = data.data.shape[1]
+    xcenter = NumX/2.0 + 0.5
+    ycenter = NumY/2.0 + 0.5
+    sx = data.metadata['det.pixelsizex'] # cm
+    sy = data.metadata['det.pixelsizey']
+    sx3 = 1000.
+    sy3 = 1000.
+    rcentr = 100
+    binWidth = 1.0
+    ddr = sx*binWidth
+    x0 = data.metadata['det.beamx'] #should be close to 64
+    y0 = data.metadata['det.beamy'] #should be close to 64
+    dxbm = _FX(x0,sx3,xcenter,sx)
+    dybm = _FX(y0,sy3,ycenter,sy)
+
+    SDD = data.metadata["det.dis"] 
+    wavelength = data.metadata["resolution.lmda"]
+    
+    ## the commented code doesn't work...
+    # nq=1
+    # for ii in range(NumX):
+    #     xi = ii
+    #     dxi = _FX(xi,sx3,xcenter,sx)
+    #     dx = dxi-dxbm
+    #     for jj in range(NumY):
+    #         yj = jj
+    #         dyj = _FX(yj,sy3,ycenter,sy)
+    #         dy = dyj - dybm
+    #         if( not (mask[ii][jj])): # 
+    #             dr2 = (dx**2 + dy**2)**(0.5)# 		
+    #             if(dr2>rcentr):# //keep pixel whole
+    #                 nd = 1
+    #                 fd = 1
+    #             else:# //break pixel into 9 equal parts
+    #                 nd = 3
+    #                 fd = 2
+    #             nd2 = nd**2
+    #             for ll in range(nd):
+    #                 dxx = dx + (ll - fd)*sx/3
+    #                 kk = 1
+    #                 for kk in range(nd):
+    #                     dyy = dy + (kk - fd)*sy/3
+    #                     ir = np.floor(np.sqrt(dxx*dxx+dyy*dyy)/ddr)+1
+    #                     if ir>nq:
+    #                         nq=ir
+
+    # print('Using nq=',nq)
+    nq = 128#hardcode a large nq
+    ddr = binWidth*sx
+    kk = np.arange(1,nq,dtype=float)
+    rr = (2*kk-1)*ddr/2
+    theta = 0.5*np.arctan(rr/SDD)
+    q_vals = (4*np.pi/wavelength)*np.sin(theta)
+    return q_vals
+
+
+
 
 @nocache
 @module
-def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_method='none'):
+def circular_av_new(data, mask_data, q_vals=None, use_igor_qvals=False, dQ_method='IGOR'):
     """
     Using a circular average, it converts 2D data to 1D (I vs. Q)
 
@@ -2157,13 +2222,11 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
 
     data (sans2d): data in
 
-    q_min (float): minimum Q value for binning (defaults to q_step)
-
-    q_max (float): maxiumum Q value for binning (defaults to max of q values in data)
-
-    q_step (float): step size for Q bins (defaults to minimum qx step)
+    q_vals (float[]*): bin values
 
     mask_data (sans2d?): mask file loaded from disk
+
+    use_igor_qvals (bool): calculate the qvalues used by the igor macros (for testing purposes only)
 
     dQ_method (opt:none|IGOR|statistical) : method for calculating dQ
 
@@ -2188,36 +2251,48 @@ def circular_av_new(data, mask_data, q_min=None, q_max=None, q_step=None, dQ_met
     if data.qx is None:
         raise ValueError("Q is not defined - convert pixels to Q first")
 
-    if q_step is None:
+    # if q_step is None:
+    #     q_step = data.qx[1, 0]-data.qx[0, 0] / 1.0
+
+    # if q_min is None:
+    #     q_min = q_step
+    # 
+    # if q_max is None:
+    #     q_max = data.q[mask].max()
+
+    if (q_vals is None) and (not use_igor_qvals):
         q_step = data.qx[1, 0]-data.qx[0, 0] / 1.0
-
-    if q_min is None:
         q_min = q_step
-    
-    if q_max is None:
         q_max = data.q[mask].max()
+        q_bins = np.arange(q_min, q_max+q_step, q_step)
+    else:
+        if use_igor_qvals:
+            q_vals = _calc_igor_qvals(data,mask)
+        dq = np.diff(q_vals)
+        dq = np.insert(dq,0,dq[0])
+        q_bins = q_vals+dq/2.0
+        q_bins = np.insert(q_bins,0,q_vals[0]-dq[0]/2.0)
 
-    q_bins = np.arange(q_min, q_max+q_step, q_step)
     Q = (q_bins[:-1] + q_bins[1:])/2.0
 
     oversampling = 3
 
-    o_mask = oversample_2d(mask, oversampling)
-    #o_q = oversample_2d(data.q, oversampling)
+    o_mask = _oversample_2d(mask, oversampling)
+    #o_q = _oversample_2d(data.q, oversampling)
     o_qxi, o_qyi = np.indices(o_mask.shape)
     o_qx_offsets = ((o_qxi % oversampling) + 0.5) / oversampling
     o_qy_offsets = ((o_qyi % oversampling) + 0.5) / oversampling
-    qx_width = oversample_2d(data.qx_hi - data.qx_lo, oversampling)
-    qy_width = oversample_2d(data.qy_hi - data.qy_lo, oversampling)
+    qx_width = _oversample_2d(data.qx_hi - data.qx_lo, oversampling)
+    qy_width = _oversample_2d(data.qy_hi - data.qy_lo, oversampling)
     original_lookups = (np.floor_divide(o_qxi, oversampling), np.floor_divide(o_qyi, oversampling))
     o_qx = data.qx_lo[original_lookups] + (qx_width * o_qx_offsets)
     o_qy = data.qy_lo[original_lookups] + (qy_width * o_qy_offsets)
-    o_qz = oversample_2d(data.qz, oversampling)
+    o_qz = _oversample_2d(data.qz, oversampling)
     o_q = np.sqrt(o_qx**2 + o_qy**2 + o_qz**2)
-    o_data = oversample_2d(data.data, oversampling) # Uncertainty object...
-    o_meanQ = oversample_2d(data.meanQ, oversampling)
-    o_shadow_factor = oversample_2d(data.shadow_factor, oversampling)
-    o_dq_para = oversample_2d(data.dq_para, oversampling)
+    o_data = _oversample_2d(data.data, oversampling) # Uncertainty object...
+    o_meanQ = _oversample_2d(data.meanQ, oversampling)
+    o_shadow_factor = _oversample_2d(data.shadow_factor, oversampling)
+    o_dq_para = _oversample_2d(data.dq_para, oversampling)
 
     # dq = data.dq_para if hasattr(data, 'dqpara') else np.ones_like(data.q) * q_step
     I, _bins_used = np.histogram(o_q[o_mask], bins=q_bins, weights=o_data.x[o_mask])
