@@ -935,7 +935,7 @@ def join_data_1d(data):
 
 @nocache
 @module
-def trim_points_1d(data, trim_indices=None):
+def trim_points_1d(data, guess_trim=False,trim_indices=None):
     """
     Identify and trim points from the beginning and end of 1D sans data
 
@@ -945,6 +945,9 @@ def trim_points_1d(data, trim_indices=None):
 
     trim_indices (index[]*): Should always have only two points specified
     representing the lowest and highest index to trim to/from. 
+
+    guess_trim (bool): If trim_indices are not specified and guess_trim is
+    True, attempt to automatically trim the data.
 
     **Returns**
 
@@ -959,6 +962,18 @@ def trim_points_1d(data, trim_indices=None):
             raise ValueError('Trim failure! Exactly two points should be specified for each dataset')
         mask_lo = min(trim_indices)
         mask_hi = max(trim_indices)
+
+        for j in range(mask_lo):
+            mask_indices.append(j)
+
+        for j in range(mask_hi,len(data.Q)):
+            mask_indices.append(j)
+    elif guess_trim:
+        if data.ShadowFactor is None:
+            raise ValueError("Need ShadowFactor Defined to guess trimming. Need to convert Pixels to Q")
+        mask_lo = np.where(data.ShadowFactor>=1.0)[0][0]
+        mask_hi = len(data.Q)-15
+        print('Guessing trim lo/hi',mask_lo,'/',mask_hi)
 
         for j in range(mask_lo):
             mask_indices.append(j)
