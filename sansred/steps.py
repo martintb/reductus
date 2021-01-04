@@ -391,7 +391,6 @@ def autosort_intent(rawdata, subsort="det.des_dis", add_scattering=True):
     sample_trans = []
     empty_trans = []
 
-    print(rawdata)
 
     for r in rawdata:
         purpose = _s(r.metadata['analysis.filepurpose'])
@@ -984,7 +983,6 @@ def trim_points_1d(data, guess_trim=False,trim_indices=None):
             raise ValueError("Need ShadowFactor Defined to guess trimming. Need to convert Pixels to Q")
         mask_lo = np.where(data.ShadowFactor>=1.0)[0][0]
         mask_hi = len(data.Q)-15
-        print('Guessing trim lo/hi',mask_lo,'/',mask_hi)
 
         for j in range(mask_lo):
             mask_indices.append(j)
@@ -1082,8 +1080,6 @@ def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None,align_by
                 ('det.des_dis',d.metadata['det.des_dis']),
                 ])
             scale_params.append(Parameters(od))
-    print(scaled_data)
-    print(scale_params)
     return scaled_data,scale_params
 
 
