@@ -1,0 +1,39 @@
+name: reductus_dev
+channels:
+  - conda-forge 
+  - defaults
+dependencies:
+  - python=3
+  - pip
+  - pandas 
+  - xarray
+  - jupyter
+  - jupyterlab
+  - ipywidgets
+  - ipympl
+  - nodejs
+  - jupyterlab-git
+    
+  - lmfit
+  - setuptools
+  - pytz
+  - python-dateutil
+  - numpy
+  - scipy
+  - h5py
+  - numdifftools
+  - uncertainties
+  - pillow
+  - docutils
+  - msgpack-python
+  - diskcache
+  - flask
+  - werkzeug
+  - typing
+  - simplejson
+  - pytest
+  - importlib_resources
+  - lz4
+  - pylru
+  - flask-cors
+
