@@ -10,7 +10,7 @@ from __future__ import print_function
 from posixpath import basename, join
 from copy import copy, deepcopy
 from io import BytesIO
-from collections import OrderedDict
+from collections import OrderedDict,defaultdict
 
 import numpy as np
 
@@ -911,7 +911,7 @@ def convert_pixels_to_Q(data_list, Tsam_list, beam_center=[None,None], correct_s
 
 @nocache
 @module
-def join_data_1d(data):
+def join_data_1d(data,align_by='sample.description'):
     """
     Join all sansIQ into a single dataset
 
@@ -919,19 +919,30 @@ def join_data_1d(data):
 
     data (sansIQ[]): data to be joined together
 
+    align_by (str): metadata used to group data when reducing multiple data simultaneously
+
     **Returns**
 
-    output (sansIQ): joined data
+    joined_data (sansIQ[]): joined data
 
     | 2020-12-23 Tyler Martin
     """
-    if len(data)<=1:
-        return data
-    else:
-        output = deepcopy(data[0])
-        for d in data[1:]:
-            output.append(d)
-        return output
+    #gather data into groups to do scaling together
+    grouped_data = defaultdict(list)
+    for d in data:
+        key = _get_compound_key(d.metadata,align_by)
+        grouped_data[key].append(d)
+
+    joined_data = []
+    for key,data in grouped_data.items():
+        if len(data)<=1:
+            joined_data.append(data)
+        else:
+            joined = deepcopy(data[0])
+            for d in data[1:]:
+                joined.append(d)
+            joined_data.append(joined)
+    return joined_data
 
 @nocache
 @module
@@ -987,12 +998,11 @@ def trim_points_1d(data, guess_trim=False,trim_indices=None):
 
 @nocache
 @module
-def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None):
+def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None,align_by='sample.description'):
     '''
     Scale intensity across multiple 1D SANS datasets so that the overlap
 
     **Inputs**
-
     data (sansIQ[]): 1D data to be scaleed
 
     scale_data (bool): whether or not to scale the data
@@ -1003,6 +1013,8 @@ def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None):
     scale_to (int): integer index of data to scale to. Integers specify data
     with increasing q
 
+    align_by (str): Key to group data by when reducing mulitple samples simultaneously
+
     **Returns**
 
     output (sansIQ[]): scaleed data
@@ -1011,51 +1023,68 @@ def scale_data_1d(data,scale_data=False,scale_coeffs=None,scale_to=None):
 
     | 2020-12-23 Tyler Martin
     '''
-    from dataflow.lib import err1d
-    if scale_data:
-        if scale_coeffs is not None:
-            assert len(data)==len(scale_coeffs), "Need to provide as many scale coeffs as data"
+    from dataflow.lib import err1d# This appears to break the scaling...
+
+    #gather data into groups to do scaling together
+    grouped_data = defaultdict(list)
+    for d in data:
+        key = _get_compound_key(d.metadata,align_by)
+        grouped_data[key].append(d)
+
+    scaled_data = []
+    scale_params = []
+    for key,data in grouped_data.items():
+        if scale_data:
+            if scale_coeffs is not None:
+                assert len(data)==len(scale_coeffs), "Need to provide as many scale coeffs as data"
+            else:
+                if scale_to is None:
+                    scale_to = len(data)-1#scale to highest q
+                max_q = [max(d.Q) for d in data]
+                sort_index = np.argsort(max_q)#data may not be in q-order
+                scale_coeffs = [1.0]*len(data)
+                for index in range(len(data)):
+                    # determine which direction the scaleIndex is in (higher or lower q)
+                    scaleDir = np.sign(index-scale_to) 
+                    scale = 1.0 #default scale is no-scale
+                    if not (scaleDir==0):
+                        # need to walk from "scaleIndex" curve back to currIndex
+                        # and 'build' scaleing coefficient
+                        for j in range(scale_to,index,scaleDir):
+                            j1 = j
+                            j2 = j+scaleDir
+                            q1 = data[sort_index[j1]].meanQ
+                            I1 = data[sort_index[j1]].I
+                            q2 = data[sort_index[j2]].meanQ
+                            I2 = data[sort_index[j2]].I
+                            scaleFac = _calc_intensity_scale(q1,I1,q2,I2)[0]
+                            scale *= scaleFac
+                    scale_coeffs[sort_index[index]] = scale
+
         else:
-            if scale_to is None:
-                scale_to = len(data)-1#scale to highest q
-            max_q = [max(d.Q) for d in data]
-            sort_index = np.argsort(max_q)#data may not be in q-order
             scale_coeffs = [1.0]*len(data)
-            for index in range(len(data)):
-                # determine which direction the scaleIndex is in (higher or lower q)
-                scaleDir = np.sign(index-scale_to) 
-                scale = 1.0 #default scale is no-scale
-                if not (scaleDir==0):
-                    # need to walk from "scaleIndex" curve back to currIndex
-                    # and 'build' scaleing coefficient
-                    for j in range(scale_to,index,scaleDir):
-                        j1 = j
-                        j2 = j+scaleDir
-                        q1 = data[sort_index[j1]].meanQ
-                        I1 = data[sort_index[j1]].I
-                        q2 = data[sort_index[j2]].meanQ
-                        I2 = data[sort_index[j2]].I
-                        scaleFac = _calc_intensity_scale(q1,I1,q2,I2)[0]
-                        scale *= scaleFac
-                scale_coeffs[sort_index[index]] = scale
+
+        data = data.copy()
         for d,s in zip(data,scale_coeffs):
+            # d._I,d._dI = err1d.mul(d._I, d._dI, scale, 0.0) #this doesn't work
             d._I*=s
             d._dI*=s
-    else:
-        scale_coeffs = [1.0]*len(data)
+        scaled_data.extend(data)
 
-    scale_output = []
-    for d,s in zip(data,scale_coeffs):
-        od = OrderedDict([
-            ("factor", s), 
-            ("factor_variance", 0.0), 
-            ("factor_err", 0.0),
-            ('sample.description',d.metadata['sample.description']),
-            ('resolution.lmda',d.metadata['resolution.lmda']),
-            ('det.des_dis',d.metadata['det.des_dis']),
-            ])
-        scale_output.append( Parameters(od))
-    return data,scale_output
+        for d,s in zip(data,scale_coeffs):
+            od = OrderedDict([
+                ("factor", s), 
+                ("factor_variance", 0.0), 
+                ("factor_err", 0.0),
+                ('sample.label',d.metadata['sample.label']),
+                ('sample.description',d.metadata['sample.description']),
+                ('resolution.lmda',d.metadata['resolution.lmda']),
+                ('det.des_dis',d.metadata['det.des_dis']),
+                ])
+            scale_params.append(Parameters(od))
+    print(scaled_data)
+    print(scale_params)
+    return scaled_data,scale_params
 
 
 def _calc_intensity_scale(q1,I1,q2,I2):
