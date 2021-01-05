@@ -31,6 +31,12 @@ config = {
             "start_path": "",
         },
         {
+            "name": "nsoft",
+            "url": "http://charlotte.nist.gov/pub",
+            "start_path": "public/nsoft",
+            "file_helper_url": "http://charlotte.ncnr.nist.gov/ncnrdata/listftpfiles_json.php",
+        },
+        {
             "name": "ncnr",
             "url": "https://ncnr.nist.gov/pub/",
             "start_path": "ncnrdata",
